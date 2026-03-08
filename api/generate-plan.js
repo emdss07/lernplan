@@ -59,32 +59,36 @@ Antworte NUR mit JSON in exakt diesem Format (kein Markdown, keine Erklärung):
 }`;
 
   try {
-    // ✅ Google Gemini 2.0 Flash — free tier, fast, great quality
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-
-    const response = await fetch(geminiUrl, {
+    // ✅ Groq — free tier, 14,400 requests/day, extremely fast
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1500,
-          // Tell Gemini to respond in JSON mode
-          responseMimeType: "application/json",
-        },
+        model: "llama3-8b-8192",
+        temperature: 0.7,
+        max_tokens: 1500,
+        messages: [
+          {
+            role: "system",
+            content: "Du bist ein Abitur-Lerncoach. Antworte IMMER nur mit reinem JSON, ohne Markdown, ohne Erklärung."
+          },
+          { role: "user", content: prompt }
+        ],
       }),
     });
 
     if (!response.ok) {
       const err = await response.text();
-      console.error("Gemini error:", err);
+      console.error("Groq error:", err);
       return res.status(500).json({ error: "AI service error" });
     }
 
     const data = await response.json();
-    // Gemini response structure
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    // Groq uses OpenAI-compatible response format
+    const text = data.choices?.[0]?.message?.content || "";
     const clean = text.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
 
