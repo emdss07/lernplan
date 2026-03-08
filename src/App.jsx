@@ -14,7 +14,6 @@ const css = `
     background-image: radial-gradient(ellipse at 10% 20%,rgba(200,64,26,.06) 0%,transparent 50%),
       radial-gradient(ellipse at 90% 80%,rgba(42,92,69,.06) 0%,transparent 50%); }
 
-  /* NAV */
   .nav { display:flex; align-items:center; padding:1rem 1.25rem; border-bottom:1px solid var(--border);
     background:rgba(245,240,232,.95); backdrop-filter:blur(10px); position:sticky; top:0; z-index:100; }
   .nav-logo { font-family:'Fraunces',serif; font-size:1.35rem; font-weight:700; color:var(--ink); letter-spacing:-.02em; }
@@ -22,7 +21,6 @@ const css = `
   .nav-version { font-size:.68rem; color:var(--muted); margin-left:.5rem; background:var(--warm);
     border:1px solid var(--border); border-radius:20px; padding:.15rem .55rem; }
 
-  /* ONBOARD */
   .onboard { width:100%; max-width:520px; margin:0 auto; padding:2.5rem 1.25rem 4rem; animation:fadeUp .5s ease both; }
   .eyebrow { font-size:.7rem; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); font-weight:500; margin-bottom:.5rem; }
   .version-pill { display:inline-block; font-size:.68rem; color:var(--muted); background:var(--warm);
@@ -31,11 +29,12 @@ const css = `
   .hero-title em { font-style:italic; color:var(--accent); }
   .hero-sub { color:var(--muted); font-size:.93rem; line-height:1.65; margin-bottom:2rem; }
 
-  /* FORM */
   .form-card { background:var(--card); border:1px solid var(--border); border-radius:16px;
     padding:1.4rem; display:flex; flex-direction:column; gap:1.1rem; box-shadow:0 4px 24px rgba(0,0,0,.06); }
   .field { display:flex; flex-direction:column; gap:.35rem; }
   .field-label { font-size:.72rem; font-weight:500; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; }
+  .field-label-row { display:flex; align-items:center; justify-content:space-between; }
+  .field-hint { font-size:.7rem; color:var(--accent); font-weight:500; }
   .two-col { display:grid; grid-template-columns:1fr 1fr; gap:.9rem; }
   @media(max-width:440px){ .two-col { grid-template-columns:1fr; } }
   .inp { background:var(--cream); border:1px solid var(--border); border-radius:9px;
@@ -44,7 +43,6 @@ const css = `
   .inp:focus { border-color:var(--accent); }
   textarea.inp { resize:vertical; min-height:76px; }
 
-  /* CHIPS */
   .chip-wrap { display:flex; flex-wrap:wrap; gap:.45rem; margin-top:.2rem; align-items:center; }
   .chip { padding:.32rem .85rem; border-radius:20px; border:1.5px solid var(--border);
     font-size:.78rem; font-weight:500; cursor:pointer; background:var(--cream);
@@ -60,18 +58,17 @@ const css = `
     border-radius:20px; padding:.3rem .85rem; font-family:'DM Sans',sans-serif;
     font-size:.78rem; font-weight:500; color:var(--ink); outline:none; min-width:0; }
   .custom-inp-ok { padding:.3rem .75rem; border-radius:20px; border:none;
-    background:var(--accent); color:#fff; font-size:.78rem; font-weight:500;
-    cursor:pointer; white-space:nowrap; flex-shrink:0; }
+    background:var(--accent); color:#fff; font-size:.78rem; font-weight:500; cursor:pointer; white-space:nowrap; flex-shrink:0; }
   .custom-inp-cancel { padding:.3rem .6rem; border-radius:20px; border:1.5px solid var(--border);
     background:var(--cream); color:var(--muted); font-size:.78rem; cursor:pointer; flex-shrink:0; }
 
-  /* EXAM ROWS */
   .exam-rows { display:flex; flex-direction:column; gap:.5rem; margin-top:.2rem; }
   .exam-row { display:flex; align-items:center; gap:.7rem; background:var(--cream);
-    border:1px solid var(--border); border-radius:10px; padding:.65rem .9rem; min-width:0; }
+    border:1px solid var(--border); border-radius:10px; padding:.65rem .9rem; min-width:0; transition:border-color .18s; }
+  .exam-row.missing { border-color:rgba(200,64,26,.4); background:rgba(200,64,26,.03); }
   .exam-name { font-size:.86rem; font-weight:500; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .exam-required { font-size:.68rem; color:var(--accent); margin-left:.3rem; }
 
-  /* DATE PICKER */
   .dp-wrap { position:relative; flex-shrink:0; }
   .dp-btn { display:flex; align-items:center; gap:.4rem; padding:.38rem .7rem;
     background:var(--warm); border-radius:7px; cursor:pointer; font-size:.8rem;
@@ -79,6 +76,7 @@ const css = `
     border:1.5px solid transparent; transition:all .15s; -webkit-tap-highlight-color:transparent; }
   .dp-btn:hover { border-color:var(--accent); }
   .dp-btn.picked { background:rgba(200,64,26,.09); color:var(--accent); border-color:rgba(200,64,26,.25); }
+  .dp-btn.missing { border-color:var(--accent); background:rgba(200,64,26,.06); color:var(--accent); animation:pulse 1.5s ease infinite; }
   .dp-btn svg { width:13px; height:13px; flex-shrink:0; }
   .dp-popup { position:fixed; z-index:600; background:var(--card); border:1px solid var(--border);
     border-radius:14px; box-shadow:0 10px 40px rgba(0,0,0,.18); padding:1rem; width:268px; animation:fadeUp .15s ease both; }
@@ -100,7 +98,6 @@ const css = `
   .dp-cell.dp-past { color:var(--border); cursor:not-allowed; }
   .dp-cell.dp-empty { cursor:default; }
 
-  /* BUTTON */
   .btn-main { background:var(--ink); color:var(--cream); border:none; border-radius:10px;
     padding:.88rem; font-family:'DM Sans',sans-serif; font-size:.93rem; font-weight:500;
     cursor:pointer; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:.5rem; width:100%;
@@ -108,19 +105,16 @@ const css = `
   .btn-main:hover:not(:disabled) { background:var(--accent); transform:translateY(-1px); box-shadow:0 6px 20px rgba(200,64,26,.25); }
   .btn-main:disabled { opacity:.45; cursor:not-allowed; }
 
-  /* LOADING */
   .loading { display:flex; flex-direction:column; align-items:center; justify-content:center;
     min-height:80vh; gap:1.4rem; padding:2rem; text-align:center; animation:fadeIn .3s ease; }
   .spinner { width:52px; height:52px; border-radius:50%; border:3px solid var(--border); border-top-color:var(--accent); animation:spin .8s linear infinite; }
   .loading-h { font-family:'Fraunces',serif; font-size:1.25rem; color:var(--ink); }
   .loading-s { font-size:.82rem; color:var(--muted); animation:pulse 2s ease infinite; }
 
-  /* DASHBOARD */
   .dash { width:100%; max-width:820px; margin:0 auto; padding:1.75rem 1.25rem 3rem; animation:fadeUp .4s ease both; }
   .dash-hi { font-family:'Fraunces',serif; font-size:clamp(1.4rem,5vw,1.9rem); font-weight:600; }
   .dash-sub { color:var(--muted); font-size:.88rem; margin-top:.3rem; margin-bottom:1.4rem; line-height:1.55; }
 
-  /* STATS */
   .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:.65rem; margin-bottom:1.4rem; }
   @media(max-width:400px){ .stats { grid-template-columns:1fr 1fr; } .stats>div:last-child { grid-column:span 2; } }
   .stat { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:.9rem 1rem; }
@@ -129,17 +123,17 @@ const css = `
   .stat-unit { font-size:.75rem; color:var(--muted); margin-left:.15rem; }
   .sec-title { font-family:'Fraunces',serif; font-size:1rem; font-weight:600; margin-bottom:.7rem; }
 
-  /* TODAY */
   .today { background:var(--ink); color:var(--cream); border-radius:14px; padding:1.3rem 1.4rem; margin-bottom:1.4rem; position:relative; overflow:hidden; }
   .today::before { content:''; position:absolute; top:-35px; right:-35px; width:120px; height:120px; border-radius:50%; background:rgba(200,64,26,.18); pointer-events:none; }
-  .today-lbl { font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; color:rgba(245,240,232,.45); margin-bottom:.35rem; }
+  .today-lbl { font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; color:rgba(245,240,232,.45); margin-bottom:.15rem; }
+  .today-date { font-size:.78rem; color:rgba(245,240,232,.5); margin-bottom:.6rem; }
   .today-entries { display:flex; flex-direction:column; gap:.5rem; }
   .today-entry { display:flex; align-items:baseline; gap:.5rem; flex-wrap:wrap; }
-  .today-subj { font-family:'Fraunces',serif; font-size:1.1rem; font-weight:600; }
+  .today-subj { font-family:'Fraunces',serif; font-size:1.05rem; font-weight:600; }
   .today-topic { font-size:.8rem; color:rgba(245,240,232,.6); }
-  .today-dur { font-size:.72rem; color:rgba(245,240,232,.4); margin-left:auto; }
+  .today-dur { font-size:.72rem; color:rgba(245,240,232,.38); margin-left:auto; white-space:nowrap; }
+  .today-next-label { font-size:.72rem; color:rgba(245,240,232,.35); text-transform:uppercase; letter-spacing:.06em; margin-top:.7rem; margin-bottom:.2rem; padding-top:.7rem; border-top:1px solid rgba(245,240,232,.1); }
 
-  /* SUBJECT CARDS */
   .subj-grid { display:grid; grid-template-columns:1fr 1fr; gap:.65rem; margin-bottom:1.4rem; }
   @media(max-width:440px){ .subj-grid { grid-template-columns:1fr; } }
   .subj-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:1rem 1.1rem; }
@@ -150,7 +144,6 @@ const css = `
   .prog { height:4px; background:var(--warm); border-radius:3px; overflow:hidden; }
   .prog-fill { height:100%; border-radius:3px; background:var(--accent2); }
 
-  /* CALENDAR */
   .cal-wrap { margin-bottom:1.4rem; }
   .cal-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px; }
   .cal-inner { min-width:460px; }
@@ -159,7 +152,7 @@ const css = `
   .cal-week { display:grid; grid-template-columns:40px repeat(7,1fr); gap:3px; margin-bottom:3px; align-items:start; }
   .cal-lbl { font-size:.6rem; color:var(--muted); text-align:right; padding-right:4px; padding-top:5px; }
   .cal-cell { border-radius:8px; padding:4px; min-height:56px; border:1px solid var(--border);
-    background:var(--card); overflow:hidden; cursor:pointer; transition:all .15s; position:relative; }
+    background:var(--card); overflow:hidden; cursor:pointer; transition:all .15s; }
   .cal-cell:hover:not(.cal-wknd) { border-color:var(--accent); transform:translateY(-1px); box-shadow:0 2px 8px rgba(0,0,0,.08); }
   .cal-cell.cal-today { border-color:var(--accent); background:rgba(200,64,26,.04); }
   .cal-cell.cal-exam { border-color:var(--accent2); background:rgba(42,92,69,.07); }
@@ -169,19 +162,18 @@ const css = `
   .cal-tag { display:block; font-size:.56rem; padding:2px 4px; border-radius:3px; font-weight:500;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:1px; line-height:1.35; }
   .cal-more { font-size:.54rem; color:var(--muted); margin-top:1px; }
-  .t-math    { background:rgba(200,64,26,.13); color:#952f10; }
-  .t-german  { background:rgba(42,92,69,.14); color:#1a4a30; }
-  .t-english { background:rgba(180,140,30,.14); color:#7a5200; }
-  .t-bio     { background:rgba(50,120,200,.13); color:#1a3a80; }
-  .t-history { background:rgba(140,60,160,.13); color:#6a1a80; }
-  .t-physics { background:rgba(30,160,160,.13); color:#0a5a5a; }
-  .t-chem    { background:rgba(200,100,30,.13); color:#7a2a00; }
-  .t-latin   { background:rgba(100,80,160,.13); color:#3a1a70; }
-  .t-custom  { background:rgba(100,100,100,.12); color:#333; }
-  .t-exam    { background:rgba(42,92,69,.2); color:#1a4a30; font-weight:700; }
-  .cal-hint  { font-size:.67rem; color:var(--muted); margin-top:4px; text-align:right; }
+  .t-math{background:rgba(200,64,26,.13);color:#952f10}
+  .t-german{background:rgba(42,92,69,.14);color:#1a4a30}
+  .t-english{background:rgba(180,140,30,.14);color:#7a5200}
+  .t-bio{background:rgba(50,120,200,.13);color:#1a3a80}
+  .t-history{background:rgba(140,60,160,.13);color:#6a1a80}
+  .t-physics{background:rgba(30,160,160,.13);color:#0a5a5a}
+  .t-chem{background:rgba(200,100,30,.13);color:#7a2a00}
+  .t-latin{background:rgba(100,80,160,.13);color:#3a1a70}
+  .t-custom{background:rgba(100,100,100,.12);color:#333}
+  .t-exam{background:rgba(42,92,69,.2);color:#1a4a30;font-weight:700}
+  .cal-hint { font-size:.67rem; color:var(--muted); margin-top:4px; text-align:right; }
 
-  /* DAY MODAL */
   .modal-overlay { position:fixed; inset:0; background:rgba(15,14,12,.45); z-index:800;
     display:flex; align-items:flex-end; justify-content:center; animation:fadeIn .2s ease; padding:0; }
   @media(min-width:520px){ .modal-overlay { align-items:center; padding:1rem; } }
@@ -197,8 +189,8 @@ const css = `
   .modal-entry-subj { font-weight:600; font-size:.88rem; margin-bottom:.25rem; display:flex; align-items:center; gap:.5rem; }
   .modal-entry-topic { font-size:.85rem; color:var(--muted); line-height:1.4; margin-bottom:.3rem; }
   .modal-entry-dur { font-size:.75rem; color:var(--accent2); font-weight:500; }
-  .modal-exam-banner { background:rgba(42,92,69,.1); border:1px solid rgba(42,92,69,.25); border-radius:11px;
-    padding:.9rem 1rem; }
+  .modal-total { font-size:.75rem; color:var(--muted); margin-top:.8rem; text-align:right; }
+  .modal-exam-banner { background:rgba(42,92,69,.1); border:1px solid rgba(42,92,69,.25); border-radius:11px; padding:.9rem 1rem; }
   .modal-exam-banner span { font-size:.88rem; color:var(--accent2); font-weight:600; }
   .modal-close { margin-top:1.2rem; width:100%; padding:.75rem; background:var(--warm); border:none;
     border-radius:10px; font-family:'DM Sans',sans-serif; font-size:.88rem; font-weight:500;
@@ -212,14 +204,14 @@ const css = `
 
   .err { background:rgba(200,64,26,.08); border:1px solid rgba(200,64,26,.25); border-radius:10px; padding:.75rem 1rem; font-size:.82rem; color:var(--accent); margin-bottom:1rem; }
 
-  @keyframes fadeUp   { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes fadeIn   { from{opacity:0} to{opacity:1} }
-  @keyframes slideUp  { from{transform:translateY(100%)} to{transform:translateY(0)} }
-  @keyframes spin     { to{transform:rotate(360deg)} }
-  @keyframes pulse    { 0%,100%{opacity:.5} 50%{opacity:1} }
+  @keyframes fadeUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+  @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+  @keyframes spin    { to{transform:rotate(360deg)} }
+  @keyframes pulse   { 0%,100%{opacity:.5} 50%{opacity:1} }
 `;
 
-const VERSION    = "v1.2";
+const VERSION    = "v1.3";
 const SUBJECTS   = ["Mathematik","Deutsch","Englisch","Biologie","Geschichte","Physik","Chemie","Latein"];
 const SUBJ_COLOR = { Mathematik:"math",Deutsch:"german",Englisch:"english",Biologie:"bio",Geschichte:"history",Physik:"physics",Chemie:"chem",Latein:"latin" };
 const MONTHS_DE  = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
@@ -246,12 +238,16 @@ function daysUntil(s) {
   if (!s) return null;
   return Math.max(0, Math.ceil((new Date(s+"T12:00:00") - new Date()) / 86400000));
 }
-function subjColor(name) {
-  return SUBJ_COLOR[name] || "custom";
+function subjColor(name) { return SUBJ_COLOR[name] || "custom"; }
+function fmtMin(m) {
+  if (!m) return "";
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m/60), rm = m%60;
+  return rm === 0 ? `${h} Std.` : `${h} Std. ${rm} min`;
 }
 
 // ── DatePicker ─────────────────────────────────────────────
-function DatePicker({ value, onChange }) {
+function DatePicker({ value, onChange, highlight }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos]   = useState({top:0,left:0});
   const today    = new Date();
@@ -285,11 +281,11 @@ function DatePicker({ value, onChange }) {
 
   return (
     <div className="dp-wrap" ref={wrapRef}>
-      <div ref={btnRef} className={`dp-btn ${value?"picked":""}`} onClick={openPicker}>
+      <div ref={btnRef} className={`dp-btn ${value?"picked":""} ${highlight&&!value?"missing":""}`} onClick={openPicker}>
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
           <rect x="1" y="2" width="14" height="13" rx="2"/><path d="M1 6h14M5 1v2M11 1v2"/>
         </svg>
-        {value ? fmtDate(value) : "Datum wählen"}
+        {value ? fmtDate(value) : "Pflichtfeld ⚠"}
       </div>
       {open && (
         <div className="dp-popup" style={{top:pos.top, left:pos.left, position:"fixed"}}>
@@ -326,6 +322,8 @@ function DayModal({ dateStr, entries, examName, onClose }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const totalMin = entries.reduce((a,e)=>a+(e.durationMinutes||0),0);
+
   return (
     <div className="modal-overlay" onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
       <div className="modal">
@@ -340,18 +338,21 @@ function DayModal({ dateStr, entries, examName, onClose }) {
           </div>
         )}
         {entries.length > 0 && (
-          <div className="modal-entries">
-            {entries.map((e,i) => (
-              <div key={i} className="modal-entry">
-                <div className="modal-entry-subj">
-                  <div className={`subj-dot dot-${subjColor(e.subject)}`}/>
-                  {e.subject}
+          <>
+            <div className="modal-entries">
+              {entries.map((e,i) => (
+                <div key={i} className="modal-entry">
+                  <div className="modal-entry-subj">
+                    <div className={`subj-dot dot-${subjColor(e.subject)}`}/>
+                    {e.subject}
+                  </div>
+                  <div className="modal-entry-topic">{e.topic}</div>
+                  {e.durationMinutes && <div className="modal-entry-dur">⏱ {fmtMin(e.durationMinutes)}</div>}
                 </div>
-                <div className="modal-entry-topic">{e.topic}</div>
-                {e.duration && <div className="modal-entry-dur">⏱ {e.duration}</div>}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            {totalMin > 0 && <div className="modal-total">Gesamt: {fmtMin(totalMin)}</div>}
+          </>
         )}
         {!examName && entries.length === 0 && (
           <div style={{color:"var(--muted)",fontSize:".88rem"}}>Kein Lerninhalt für diesen Tag.</div>
@@ -379,7 +380,7 @@ function CalendarView({ dailyPlan, subjects }) {
 
   const monday = new Date(today);
   const dow = today.getDay();
-  monday.setDate(today.getDate() - (dow===0 ? 6 : dow-1));
+  monday.setDate(today.getDate() - (dow===0?6:dow-1));
 
   const weeks = Array.from({length:4},(_,wi) =>
     Array.from({length:7},(_,di) => {
@@ -462,30 +463,35 @@ export default function App() {
   const [plan,     setPlan]     = useState(null);
   const [loadMsg,  setLoadMsg]  = useState("");
   const [error,    setError]    = useState("");
-  const [showCustomInput, setShowCustomInput] = useState(false);
-  const [customVal, setCustomVal] = useState("");
-  const customInputRef = useRef(null);
-  const timerRef = useRef(null);
-  const todayStr = localStr(new Date());
+  const [showCustom, setShowCustom] = useState(false);
+  const [customVal,  setCustomVal]  = useState("");
+  const [showDateErrors, setShowDateErrors] = useState(false);
+  const customRef = useRef(null);
+  const timerRef  = useRef(null);
+  const todayStr  = localStr(new Date());
 
   function toggleSubj(s) {
     setSelected(p => p.includes(s) ? p.filter(x=>x!==s) : [...p,s]);
   }
 
-  function addCustomSubject() {
+  function addCustom() {
     const v = customVal.trim();
-    if (!v) { setShowCustomInput(false); return; }
+    if (!v) { setShowCustom(false); return; }
     if (!selected.includes(v)) setSelected(p => [...p, v]);
-    setCustomVal("");
-    setShowCustomInput(false);
+    setCustomVal(""); setShowCustom(false);
   }
 
-  useEffect(() => {
-    if (showCustomInput) customInputRef.current?.focus();
-  }, [showCustomInput]);
+  useEffect(() => { if (showCustom) customRef.current?.focus(); }, [showCustom]);
+
+  const missingDates = selected.filter(s => !dates[s]);
+  const canGenerate  = name && selected.length > 0 && missingDates.length === 0;
 
   async function generate() {
-    if (!name || selected.length===0) return;
+    if (!canGenerate) {
+      setShowDateErrors(true);
+      return;
+    }
+    setShowDateErrors(false);
     setError(""); setScreen("loading");
     let i = 0;
     timerRef.current = setInterval(()=>setLoadMsg(LOAD_MSGS[i++%LOAD_MSGS.length]), 1400);
@@ -507,11 +513,21 @@ export default function App() {
     }
   }
 
-  const todayEntries = plan?.dailyPlan?.filter(e=>e.date===todayStr) || [];
-  const nextEntries  = todayEntries.length===0
-    ? plan?.dailyPlan?.filter(e=>e.date>todayStr).slice(0,3) || []
-    : [];
-  const displayEntries = todayEntries.length>0 ? todayEntries : nextEntries;
+  // ── "Nächste Sessions" Logik ──────────────────────────────
+  // Find the next TWO distinct learning days from today onwards
+  const nextSessions = (() => {
+    if (!plan?.dailyPlan) return [];
+    const futureDates = [...new Set(
+      plan.dailyPlan
+        .filter(e => e.date >= todayStr)
+        .map(e => e.date)
+    )].sort().slice(0, 2);
+
+    return futureDates.map(date => ({
+      date,
+      entries: plan.dailyPlan.filter(e => e.date === date)
+    }));
+  })();
 
   if (screen==="loading") return (
     <div className="app">
@@ -553,39 +569,41 @@ export default function App() {
               {SUBJECTS.map(s=>(
                 <button key={s} className={`chip ${selected.includes(s)?"on":""}`} onClick={()=>toggleSubj(s)}>{s}</button>
               ))}
-              {/* Custom subjects already added */}
               {selected.filter(s=>!SUBJECTS.includes(s)).map(s=>(
                 <button key={s} className="chip on" onClick={()=>toggleSubj(s)}>{s} ×</button>
               ))}
-              {/* + button */}
-              {!showCustomInput && (
-                <button className="chip-add-btn" onClick={()=>setShowCustomInput(true)} title="Eigenes Fach hinzufügen">+</button>
+              {!showCustom && (
+                <button className="chip-add-btn" onClick={()=>setShowCustom(true)} title="Eigenes Fach">+</button>
               )}
             </div>
-            {showCustomInput && (
+            {showCustom && (
               <div className="custom-inp-row">
-                <input
-                  ref={customInputRef}
-                  className="custom-inp"
-                  placeholder="Fachname…"
-                  value={customVal}
-                  onChange={e=>setCustomVal(e.target.value)}
-                  onKeyDown={e=>{ if(e.key==="Enter") addCustomSubject(); if(e.key==="Escape"){setShowCustomInput(false);setCustomVal("");} }}
-                />
-                <button className="custom-inp-ok" onClick={addCustomSubject}>Hinzufügen</button>
-                <button className="custom-inp-cancel" onClick={()=>{setShowCustomInput(false);setCustomVal("");}}>✕</button>
+                <input ref={customRef} className="custom-inp" placeholder="Fachname…"
+                  value={customVal} onChange={e=>setCustomVal(e.target.value)}
+                  onKeyDown={e=>{ if(e.key==="Enter") addCustom(); if(e.key==="Escape"){setShowCustom(false);setCustomVal("");} }}/>
+                <button className="custom-inp-ok" onClick={addCustom}>Hinzufügen</button>
+                <button className="custom-inp-cancel" onClick={()=>{setShowCustom(false);setCustomVal("");}}>✕</button>
               </div>
             )}
           </div>
 
           {selected.length > 0 && (
             <div className="field">
-              <div className="field-label">Prüfungstermine</div>
+              <div className="field-label-row">
+                <div className="field-label">Prüfungstermine</div>
+                {showDateErrors && missingDates.length > 0 && (
+                  <div className="field-hint">⚠ Alle Termine erforderlich</div>
+                )}
+              </div>
               <div className="exam-rows">
                 {selected.map(s=>(
-                  <div key={s} className="exam-row">
+                  <div key={s} className={`exam-row ${showDateErrors&&!dates[s]?"missing":""}`}>
                     <div className="exam-name">{s}</div>
-                    <DatePicker value={dates[s]||""} onChange={d=>setDates(p=>({...p,[s]:d}))}/>
+                    <DatePicker
+                      value={dates[s]||""}
+                      onChange={d=>{ setDates(p=>({...p,[s]:d})); setShowDateErrors(false); }}
+                      highlight={showDateErrors && !dates[s]}
+                    />
                   </div>
                 ))}
               </div>
@@ -637,18 +655,30 @@ export default function App() {
           </div>
         </div>
 
-        {displayEntries.length > 0 && (
+        {nextSessions.length > 0 && (
           <div className="today">
-            <div className="today-lbl">{todayEntries.length>0 ? "Heute lernen" : "Nächste Sessions"}</div>
-            <div className="today-entries">
-              {displayEntries.map((e,i)=>(
-                <div key={i} className="today-entry">
-                  <div className="today-subj">{e.subject}</div>
-                  <div className="today-topic">— {e.topic}</div>
-                  {e.duration && <div className="today-dur">⏱ {e.duration}</div>}
-                </div>
-              ))}
+            <div className="today-lbl">
+              {nextSessions[0].date === todayStr ? "Heute & Morgen" : "Nächste Sessions"}
             </div>
+            {nextSessions.map((day, di) => (
+              <div key={di}>
+                <div className="today-date">
+                  {day.date === todayStr ? "Heute" : day.date === (() => { const t=new Date(); t.setDate(t.getDate()+1); return localStr(t); })() ? "Morgen" : fmtDate(day.date)} — {fmtDate(day.date)}
+                </div>
+                <div className="today-entries">
+                  {day.entries.map((e,i)=>(
+                    <div key={i} className="today-entry">
+                      <div className="today-subj">{e.subject}</div>
+                      <div className="today-topic">— {e.topic}</div>
+                      {e.durationMinutes && <div className="today-dur">⏱ {fmtMin(e.durationMinutes)}</div>}
+                    </div>
+                  ))}
+                </div>
+                {di === 0 && nextSessions.length > 1 && (
+                  <div className="today-next-label">Danach</div>
+                )}
+              </div>
+            ))}
           </div>
         )}
 
