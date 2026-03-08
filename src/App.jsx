@@ -19,11 +19,14 @@ const css = `
     background:rgba(245,240,232,.95); backdrop-filter:blur(10px); position:sticky; top:0; z-index:100; }
   .nav-logo { font-family:'Fraunces',serif; font-size:1.35rem; font-weight:700; color:var(--ink); letter-spacing:-.02em; }
   .nav-logo span { color:var(--accent); }
-  .nav-version { font-size:.7rem; color:var(--muted); margin-left:.6rem; }
+  .nav-version { font-size:.68rem; color:var(--muted); margin-left:.5rem; background:var(--warm);
+    border:1px solid var(--border); border-radius:20px; padding:.15rem .55rem; }
 
   /* ONBOARD */
   .onboard { width:100%; max-width:520px; margin:0 auto; padding:2.5rem 1.25rem 4rem; animation:fadeUp .5s ease both; }
-  .eyebrow { font-size:.7rem; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); font-weight:500; margin-bottom:.75rem; }
+  .eyebrow { font-size:.7rem; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); font-weight:500; margin-bottom:.5rem; }
+  .version-pill { display:inline-block; font-size:.68rem; color:var(--muted); background:var(--warm);
+    border:1px solid var(--border); border-radius:20px; padding:.18rem .65rem; margin-bottom:.9rem; }
   .hero-title { font-family:'Fraunces',serif; font-size:clamp(1.9rem,7vw,2.7rem); font-weight:600; line-height:1.15; margin-bottom:.75rem; }
   .hero-title em { font-style:italic; color:var(--accent); }
   .hero-sub { color:var(--muted); font-size:.93rem; line-height:1.65; margin-bottom:2rem; }
@@ -42,11 +45,25 @@ const css = `
   textarea.inp { resize:vertical; min-height:76px; }
 
   /* CHIPS */
-  .chip-wrap { display:flex; flex-wrap:wrap; gap:.45rem; margin-top:.2rem; }
+  .chip-wrap { display:flex; flex-wrap:wrap; gap:.45rem; margin-top:.2rem; align-items:center; }
   .chip { padding:.32rem .85rem; border-radius:20px; border:1.5px solid var(--border);
     font-size:.78rem; font-weight:500; cursor:pointer; background:var(--cream);
     color:var(--muted); transition:all .15s; -webkit-tap-highlight-color:transparent; }
   .chip.on { border-color:var(--accent); background:rgba(200,64,26,.08); color:var(--accent); }
+  .chip-add-btn { width:28px; height:28px; border-radius:50%; border:1.5px solid var(--border);
+    background:var(--cream); color:var(--muted); font-size:1.2rem; line-height:1;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+    transition:all .15s; padding:0; -webkit-tap-highlight-color:transparent; }
+  .chip-add-btn:hover { border-color:var(--accent); color:var(--accent); background:rgba(200,64,26,.06); }
+  .custom-inp-row { display:flex; align-items:center; gap:.4rem; margin-top:.3rem; animation:fadeUp .15s ease both; width:100%; }
+  .custom-inp { flex:1; background:var(--cream); border:1.5px solid var(--accent);
+    border-radius:20px; padding:.3rem .85rem; font-family:'DM Sans',sans-serif;
+    font-size:.78rem; font-weight:500; color:var(--ink); outline:none; min-width:0; }
+  .custom-inp-ok { padding:.3rem .75rem; border-radius:20px; border:none;
+    background:var(--accent); color:#fff; font-size:.78rem; font-weight:500;
+    cursor:pointer; white-space:nowrap; flex-shrink:0; }
+  .custom-inp-cancel { padding:.3rem .6rem; border-radius:20px; border:1.5px solid var(--border);
+    background:var(--cream); color:var(--muted); font-size:.78rem; cursor:pointer; flex-shrink:0; }
 
   /* EXAM ROWS */
   .exam-rows { display:flex; flex-direction:column; gap:.5rem; margin-top:.2rem; }
@@ -117,9 +134,10 @@ const css = `
   .today::before { content:''; position:absolute; top:-35px; right:-35px; width:120px; height:120px; border-radius:50%; background:rgba(200,64,26,.18); pointer-events:none; }
   .today-lbl { font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; color:rgba(245,240,232,.45); margin-bottom:.35rem; }
   .today-entries { display:flex; flex-direction:column; gap:.5rem; }
-  .today-entry { display:flex; align-items:baseline; gap:.5rem; }
-  .today-subj { font-family:'Fraunces',serif; font-size:1.15rem; font-weight:600; }
-  .today-topic { font-size:.82rem; color:rgba(245,240,232,.6); }
+  .today-entry { display:flex; align-items:baseline; gap:.5rem; flex-wrap:wrap; }
+  .today-subj { font-family:'Fraunces',serif; font-size:1.1rem; font-weight:600; }
+  .today-topic { font-size:.8rem; color:rgba(245,240,232,.6); }
+  .today-dur { font-size:.72rem; color:rgba(245,240,232,.4); margin-left:auto; }
 
   /* SUBJECT CARDS */
   .subj-grid { display:grid; grid-template-columns:1fr 1fr; gap:.65rem; margin-bottom:1.4rem; }
@@ -146,7 +164,6 @@ const css = `
   .cal-cell.cal-today { border-color:var(--accent); background:rgba(200,64,26,.04); }
   .cal-cell.cal-exam { border-color:var(--accent2); background:rgba(42,92,69,.07); }
   .cal-cell.cal-wknd { background:rgba(232,224,208,.5); cursor:default; }
-  .cal-cell.cal-has-entries { cursor:pointer; }
   .cal-num { font-size:.62rem; font-weight:500; color:var(--muted); margin-bottom:2px; }
   .cal-num.is-today { color:var(--accent); font-weight:700; }
   .cal-tag { display:block; font-size:.56rem; padding:2px 4px; border-radius:3px; font-weight:500;
@@ -160,13 +177,13 @@ const css = `
   .t-physics { background:rgba(30,160,160,.13); color:#0a5a5a; }
   .t-chem    { background:rgba(200,100,30,.13); color:#7a2a00; }
   .t-latin   { background:rgba(100,80,160,.13); color:#3a1a70; }
+  .t-custom  { background:rgba(100,100,100,.12); color:#333; }
   .t-exam    { background:rgba(42,92,69,.2); color:#1a4a30; font-weight:700; }
   .cal-hint  { font-size:.67rem; color:var(--muted); margin-top:4px; text-align:right; }
 
   /* DAY MODAL */
   .modal-overlay { position:fixed; inset:0; background:rgba(15,14,12,.45); z-index:800;
-    display:flex; align-items:flex-end; justify-content:center;
-    animation:fadeIn .2s ease; padding:0; }
+    display:flex; align-items:flex-end; justify-content:center; animation:fadeIn .2s ease; padding:0; }
   @media(min-width:520px){ .modal-overlay { align-items:center; padding:1rem; } }
   .modal { background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:480px;
     padding:1.5rem 1.4rem 2rem; animation:slideUp .25s ease; max-height:85vh; overflow-y:auto; }
@@ -177,10 +194,11 @@ const css = `
   .modal-title { font-family:'Fraunces',serif; font-size:1.3rem; font-weight:600; margin-bottom:1.2rem; }
   .modal-entries { display:flex; flex-direction:column; gap:.7rem; }
   .modal-entry { background:var(--cream); border:1px solid var(--border); border-radius:11px; padding:.9rem 1rem; }
-  .modal-entry-subj { font-weight:600; font-size:.88rem; margin-bottom:.2rem; display:flex; align-items:center; gap:.5rem; }
-  .modal-entry-topic { font-size:.85rem; color:var(--muted); line-height:1.4; }
+  .modal-entry-subj { font-weight:600; font-size:.88rem; margin-bottom:.25rem; display:flex; align-items:center; gap:.5rem; }
+  .modal-entry-topic { font-size:.85rem; color:var(--muted); line-height:1.4; margin-bottom:.3rem; }
+  .modal-entry-dur { font-size:.75rem; color:var(--accent2); font-weight:500; }
   .modal-exam-banner { background:rgba(42,92,69,.1); border:1px solid rgba(42,92,69,.25); border-radius:11px;
-    padding:.9rem 1rem; display:flex; align-items:center; gap:.6rem; }
+    padding:.9rem 1rem; }
   .modal-exam-banner span { font-size:.88rem; color:var(--accent2); font-weight:600; }
   .modal-close { margin-top:1.2rem; width:100%; padding:.75rem; background:var(--warm); border:none;
     border-radius:10px; font-family:'DM Sans',sans-serif; font-size:.88rem; font-weight:500;
@@ -188,14 +206,9 @@ const css = `
   .modal-close:hover { background:var(--border); }
 
   .subj-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-  .dot-math    { background:#c8401a; }
-  .dot-german  { background:#2a5c45; }
-  .dot-english { background:#b88c1e; }
-  .dot-bio     { background:#3278c8; }
-  .dot-history { background:#8c3ca0; }
-  .dot-physics { background:#1ea0a0; }
-  .dot-chem    { background:#c8641e; }
-  .dot-latin   { background:#6450a0; }
+  .dot-math{background:#c8401a} .dot-german{background:#2a5c45} .dot-english{background:#b88c1e}
+  .dot-bio{background:#3278c8} .dot-history{background:#8c3ca0} .dot-physics{background:#1ea0a0}
+  .dot-chem{background:#c8641e} .dot-latin{background:#6450a0} .dot-custom{background:#666}
 
   .err { background:rgba(200,64,26,.08); border:1px solid rgba(200,64,26,.25); border-radius:10px; padding:.75rem 1rem; font-size:.82rem; color:var(--accent); margin-bottom:1rem; }
 
@@ -206,6 +219,7 @@ const css = `
   @keyframes pulse    { 0%,100%{opacity:.5} 50%{opacity:1} }
 `;
 
+const VERSION    = "v1.2";
 const SUBJECTS   = ["Mathematik","Deutsch","Englisch","Biologie","Geschichte","Physik","Chemie","Latein"];
 const SUBJ_COLOR = { Mathematik:"math",Deutsch:"german",Englisch:"english",Biologie:"bio",Geschichte:"history",Physik:"physics",Chemie:"chem",Latein:"latin" };
 const MONTHS_DE  = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
@@ -221,8 +235,7 @@ function toStr(y,m,d) {
 }
 function fmtDate(s) {
   if (!s) return "—";
-  const d = new Date(s+"T12:00:00");
-  return d.toLocaleDateString("de-DE",{day:"numeric",month:"short",year:"numeric"});
+  return new Date(s+"T12:00:00").toLocaleDateString("de-DE",{day:"numeric",month:"short",year:"numeric"});
 }
 function fmtDateLong(s) {
   if (!s) return "";
@@ -233,11 +246,14 @@ function daysUntil(s) {
   if (!s) return null;
   return Math.max(0, Math.ceil((new Date(s+"T12:00:00") - new Date()) / 86400000));
 }
+function subjColor(name) {
+  return SUBJ_COLOR[name] || "custom";
+}
 
 // ── DatePicker ─────────────────────────────────────────────
 function DatePicker({ value, onChange }) {
-  const [open, setOpen]   = useState(false);
-  const [pos, setPos]     = useState({top:0,left:0});
+  const [open, setOpen] = useState(false);
+  const [pos, setPos]   = useState({top:0,left:0});
   const today    = new Date();
   const todayStr = localStr(today);
   const init     = value ? new Date(value+"T12:00:00") : today;
@@ -316,11 +332,11 @@ function DayModal({ dateStr, entries, examName, onClose }) {
         <div className="modal-drag"/>
         <div className="modal-date">{fmtDateLong(dateStr)}</div>
         <div className="modal-title">
-          {examName ? `🎯 Prüfungstag: ${examName}` : entries.length > 0 ? "Heutige Lerneinheiten" : "Freier Tag"}
+          {examName ? `🎯 Prüfungstag: ${examName}` : entries.length > 0 ? "Lerneinheiten" : "Freier Tag"}
         </div>
         {examName && (
           <div className="modal-exam-banner">
-            <span>✓ Prüfung für {examName} — viel Erfolg!</span>
+            <span>✓ Prüfung: {examName} — viel Erfolg!</span>
           </div>
         )}
         {entries.length > 0 && (
@@ -328,10 +344,11 @@ function DayModal({ dateStr, entries, examName, onClose }) {
             {entries.map((e,i) => (
               <div key={i} className="modal-entry">
                 <div className="modal-entry-subj">
-                  <div className={`subj-dot dot-${SUBJ_COLOR[e.subject]||"math"}`}/>
+                  <div className={`subj-dot dot-${subjColor(e.subject)}`}/>
                   {e.subject}
                 </div>
                 <div className="modal-entry-topic">{e.topic}</div>
+                {e.duration && <div className="modal-entry-dur">⏱ {e.duration}</div>}
               </div>
             ))}
           </div>
@@ -347,11 +364,10 @@ function DayModal({ dateStr, entries, examName, onClose }) {
 
 // ── CalendarView ───────────────────────────────────────────
 function CalendarView({ dailyPlan, subjects }) {
-  const [modal, setModal] = useState(null); // {dateStr, entries, examName}
+  const [modal, setModal] = useState(null);
   const today    = new Date();
   const todayStr = localStr(today);
 
-  // Group entries by date (multiple per day)
   const byDate = {};
   (dailyPlan||[]).forEach(e => {
     if (!byDate[e.date]) byDate[e.date] = [];
@@ -361,7 +377,6 @@ function CalendarView({ dailyPlan, subjects }) {
   const examByDate = {};
   (subjects||[]).forEach(s => { if (s.examDate) examByDate[s.examDate] = s.name; });
 
-  // Start from Monday of current week
   const monday = new Date(today);
   const dow = today.getDay();
   monday.setDate(today.getDate() - (dow===0 ? 6 : dow-1));
@@ -394,12 +409,12 @@ function CalendarView({ dailyPlan, subjects }) {
               <div key={wi} className="cal-week">
                 <div className="cal-lbl">W{wi+1}</div>
                 {week.map((date,di)=>{
-                  const ds       = localStr(date);
-                  const entries  = byDate[ds] || [];
-                  const exam     = examByDate[ds];
-                  const isToday  = ds === todayStr;
-                  const isWknd   = di >= 5;
-                  const hasData  = entries.length > 0 || exam;
+                  const ds      = localStr(date);
+                  const entries = byDate[ds] || [];
+                  const exam    = examByDate[ds];
+                  const isToday = ds === todayStr;
+                  const isWknd  = di >= 5;
+                  const hasData = entries.length > 0 || exam;
                   return (
                     <div key={di}
                       className={`cal-cell ${isToday?"cal-today":""} ${exam?"cal-exam":""} ${isWknd&&!isToday&&!exam?"cal-wknd":""} ${hasData?"cal-has-entries":""}`}
@@ -408,7 +423,7 @@ function CalendarView({ dailyPlan, subjects }) {
                       <div className={`cal-num ${isToday?"is-today":""}`}>{date.getDate()}</div>
                       {exam && <span className="cal-tag t-exam">🎯 {exam.substring(0,7)}</span>}
                       {!exam && entries.slice(0,2).map((e,i)=>(
-                        <span key={i} className={`cal-tag t-${SUBJ_COLOR[e.subject]||"math"}`}>
+                        <span key={i} className={`cal-tag t-${subjColor(e.subject)}`}>
                           {e.topic?.length>12 ? e.topic.substring(0,11)+"…" : e.topic}
                         </span>
                       ))}
@@ -438,22 +453,36 @@ function CalendarView({ dailyPlan, subjects }) {
 
 // ── App ────────────────────────────────────────────────────
 export default function App() {
-  const [screen,    setScreen]    = useState("onboard");
-  const [name,      setName]      = useState("");
-  const [hours,     setHours]     = useState("2");
-  const [weakness,  setWeakness]  = useState("");
-  const [selected,  setSelected]  = useState([]);
-  const [dates,     setDates]     = useState({});
-  const [plan,      setPlan]      = useState(null);
-  const [loadMsg,   setLoadMsg]   = useState("");
-  const [error,     setError]     = useState("");
+  const [screen,   setScreen]   = useState("onboard");
+  const [name,     setName]     = useState("");
+  const [hours,    setHours]    = useState("2");
+  const [weakness, setWeakness] = useState("");
+  const [selected, setSelected] = useState([]);
+  const [dates,    setDates]    = useState({});
+  const [plan,     setPlan]     = useState(null);
+  const [loadMsg,  setLoadMsg]  = useState("");
+  const [error,    setError]    = useState("");
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customVal, setCustomVal] = useState("");
+  const customInputRef = useRef(null);
   const timerRef = useRef(null);
-
   const todayStr = localStr(new Date());
 
   function toggleSubj(s) {
     setSelected(p => p.includes(s) ? p.filter(x=>x!==s) : [...p,s]);
   }
+
+  function addCustomSubject() {
+    const v = customVal.trim();
+    if (!v) { setShowCustomInput(false); return; }
+    if (!selected.includes(v)) setSelected(p => [...p, v]);
+    setCustomVal("");
+    setShowCustomInput(false);
+  }
+
+  useEffect(() => {
+    if (showCustomInput) customInputRef.current?.focus();
+  }, [showCustomInput]);
 
   async function generate() {
     if (!name || selected.length===0) return;
@@ -478,11 +507,11 @@ export default function App() {
     }
   }
 
-  // Today's entries (multiple)
   const todayEntries = plan?.dailyPlan?.filter(e=>e.date===todayStr) || [];
   const nextEntries  = todayEntries.length===0
-    ? plan?.dailyPlan?.filter(e=>e.date>todayStr).slice(0,2) || []
+    ? plan?.dailyPlan?.filter(e=>e.date>todayStr).slice(0,3) || []
     : [];
+  const displayEntries = todayEntries.length>0 ? todayEntries : nextEntries;
 
   if (screen==="loading") return (
     <div className="app">
@@ -500,6 +529,7 @@ export default function App() {
       <style>{GOOGLE_FONTS}{css}</style>
       <div className="onboard">
         <div className="eyebrow">Abitur Lernplan</div>
+        <div className="version-pill">{VERSION}</div>
         <h1 className="hero-title">Dein <em>smarter</em> Lernplan — von KI erstellt</h1>
         <p className="hero-sub">Gib deine Fächer und Prüfungstermine ein. Die KI erstellt in Sekunden einen personalisierten Lernplan.</p>
         {error && <div className="err">⚠ {error}</div>}
@@ -516,14 +546,38 @@ export default function App() {
               </select>
             </div>
           </div>
+
           <div className="field">
             <div className="field-label">Fächer auswählen</div>
             <div className="chip-wrap">
               {SUBJECTS.map(s=>(
                 <button key={s} className={`chip ${selected.includes(s)?"on":""}`} onClick={()=>toggleSubj(s)}>{s}</button>
               ))}
+              {/* Custom subjects already added */}
+              {selected.filter(s=>!SUBJECTS.includes(s)).map(s=>(
+                <button key={s} className="chip on" onClick={()=>toggleSubj(s)}>{s} ×</button>
+              ))}
+              {/* + button */}
+              {!showCustomInput && (
+                <button className="chip-add-btn" onClick={()=>setShowCustomInput(true)} title="Eigenes Fach hinzufügen">+</button>
+              )}
             </div>
+            {showCustomInput && (
+              <div className="custom-inp-row">
+                <input
+                  ref={customInputRef}
+                  className="custom-inp"
+                  placeholder="Fachname…"
+                  value={customVal}
+                  onChange={e=>setCustomVal(e.target.value)}
+                  onKeyDown={e=>{ if(e.key==="Enter") addCustomSubject(); if(e.key==="Escape"){setShowCustomInput(false);setCustomVal("");} }}
+                />
+                <button className="custom-inp-ok" onClick={addCustomSubject}>Hinzufügen</button>
+                <button className="custom-inp-cancel" onClick={()=>{setShowCustomInput(false);setCustomVal("");}}>✕</button>
+              </div>
+            )}
           </div>
+
           {selected.length > 0 && (
             <div className="field">
               <div className="field-label">Prüfungstermine</div>
@@ -537,10 +591,12 @@ export default function App() {
               </div>
             </div>
           )}
+
           <div className="field">
             <div className="field-label">Schwächen / Wünsche (optional)</div>
             <textarea className="inp" placeholder="z.B. Integralrechnung fällt mir schwer…" value={weakness} onChange={e=>setWeakness(e.target.value)}/>
           </div>
+
           <button className="btn-main" onClick={generate} disabled={!name||selected.length===0}>
             <span>✦</span> KI-Lernplan generieren
           </button>
@@ -553,7 +609,7 @@ export default function App() {
     <div className="app">
       <style>{GOOGLE_FONTS}{css}</style>
       <nav className="nav">
-        <div className="nav-logo">Lern<span>.</span>Plan <span className="nav-version">v1.1</span></div>
+        <div className="nav-logo">Lern<span>.</span>Plan <span className="nav-version">{VERSION}</span></div>
       </nav>
       <div className="dash">
         <div className="dash-hi">Hallo, {name} 👋</div>
@@ -571,20 +627,25 @@ export default function App() {
           <div className="stat">
             <div className="stat-lbl">Nächste Prüfung</div>
             <div className="stat-val">
-              {(()=>{ const ws=plan.subjects?.filter(s=>s.examDate).sort((a,b)=>new Date(a.examDate)-new Date(b.examDate)); const d=ws?.length?daysUntil(ws[0].examDate):null; return d!==null?d:"—"; })()}
+              {(()=>{
+                const ws = plan.subjects?.filter(s=>s.examDate).sort((a,b)=>new Date(a.examDate)-new Date(b.examDate));
+                const d = ws?.length ? daysUntil(ws[0].examDate) : null;
+                return d !== null ? d : "—";
+              })()}
               <span className="stat-unit"> Tage</span>
             </div>
           </div>
         </div>
 
-        {(todayEntries.length > 0 || nextEntries.length > 0) && (
+        {displayEntries.length > 0 && (
           <div className="today">
-            <div className="today-lbl">{todayEntries.length>0?"Heute lernen":"Nächste Sessions"}</div>
+            <div className="today-lbl">{todayEntries.length>0 ? "Heute lernen" : "Nächste Sessions"}</div>
             <div className="today-entries">
-              {(todayEntries.length>0 ? todayEntries : nextEntries).map((e,i)=>(
+              {displayEntries.map((e,i)=>(
                 <div key={i} className="today-entry">
                   <div className="today-subj">{e.subject}</div>
                   <div className="today-topic">— {e.topic}</div>
+                  {e.duration && <div className="today-dur">⏱ {e.duration}</div>}
                 </div>
               ))}
             </div>
@@ -600,7 +661,7 @@ export default function App() {
                 <div className="subj-header">
                   <div>
                     <div className="subj-name">{s.name}</div>
-                    <div className="subj-date">{s.examDate?`Prüfung: ${fmtDate(s.examDate)}`:"Kein Datum"}</div>
+                    <div className="subj-date">{s.examDate ? `Prüfung: ${fmtDate(s.examDate)}` : "Kein Datum"}</div>
                   </div>
                   {d!==null && <div className="subj-days">{d}d</div>}
                 </div>
