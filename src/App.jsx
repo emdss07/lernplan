@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 const GOOGLE_FONTS = `@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap');`;
 
@@ -169,9 +170,9 @@ const css = `
   .t-exam{background:rgba(42,92,69,.2);color:#1a4a30;font-weight:700}
   .cal-hint { font-size:.67rem; color:var(--muted); margin-top:4px; text-align:right; }
 
-  .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; width:100vw; height:100vh;
-    background:rgba(15,14,12,.55); z-index:800;
-    display:flex; align-items:flex-end; justify-content:center; animation:fadeIn .2s ease; padding:0; }
+  .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(15,14,12,.6); z-index:9999;
+    display:flex; align-items:flex-end; justify-content:center; animation:fadeIn .2s ease; }
   @media(min-width:520px){ .modal-overlay { align-items:center; padding:1rem; } }
   .modal { background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:480px;
     padding:1.5rem 1.4rem 2rem; animation:slideUp .25s ease; max-height:85vh; overflow-y:auto; }
@@ -207,7 +208,7 @@ const css = `
   @keyframes pulse   { 0%,100%{opacity:.5} 50%{opacity:1} }
 `;
 
-const VERSION    = "v1.4";
+const VERSION    = "v1.5";
 const SUBJECTS   = ["Mathematik","Deutsch","Englisch","Biologie","Geschichte","Physik","Chemie","Latein"];
 const SUBJ_COLOR = { Mathematik:"math",Deutsch:"german",Englisch:"english",Biologie:"bio",Geschichte:"history",Physik:"physics",Chemie:"chem",Latein:"latin" };
 const MONTHS_DE  = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
@@ -264,8 +265,12 @@ function DatePicker({ value, onChange }) {
   function openPicker() {
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
-      let left = r.right - 268; if (left < 8) left = 8;
-      setPos({ top: r.bottom + 6 + window.scrollY, left });
+      // Align popup's right edge to button's right edge, clamp to viewport
+      let left = r.right - 268;
+      if (left < 8) left = 8;
+      if (left + 268 > window.innerWidth - 8) left = window.innerWidth - 268 - 8;
+      const top = r.bottom + 6;
+      setPos({ top, left });
     }
     setOpen(o => !o);
   }
@@ -284,7 +289,7 @@ function DatePicker({ value, onChange }) {
         {value ? fmtDate(value) : "Datum wählen"}
       </div>
       {open && (
-        <div className="dp-popup" style={{top:pos.top, left:pos.left, position:"fixed"}}>
+        <div className="dp-popup" style={{top:pos.top, left:pos.left}}>
           <div className="dp-head">
             <button className="dp-nav" onClick={()=>vm===0?(setVm(11),setVy(y=>y-1)):setVm(m=>m-1)}>‹</button>
             <div className="dp-month">{MONTHS_DE[vm]} {vy}</div>
@@ -320,7 +325,7 @@ function DayModal({ dateStr, entries, examName, onClose }) {
 
   const totalMin = entries.reduce((a,e)=>a+(e.durationMinutes||0),0);
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
       <div className="modal">
         <div className="modal-drag"/>
@@ -355,7 +360,8 @@ function DayModal({ dateStr, entries, examName, onClose }) {
         )}
         <button className="modal-close" onClick={onClose}>Schließen</button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -535,7 +541,7 @@ export default function App() {
     <div className="app">
       <style>{GOOGLE_FONTS}{css}</style>
       <div className="onboard">
-        <div className="eyebrow">Abitur Lernplan</div>
+        <div className="eyebrow">Lernplan</div>
         <div className="version-pill">{VERSION}</div>
         <h1 className="hero-title">Dein <em>smarter</em> Lernplan — von KI erstellt</h1>
         <p className="hero-sub">Gib deine Fächer und Prüfungstermine ein. Die KI erstellt in Sekunden einen personalisierten Lernplan.</p>
