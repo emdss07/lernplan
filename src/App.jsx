@@ -9,9 +9,9 @@ const css = `
     --ink:#0f0e0c; --cream:#f5f0e8; --warm:#e8e0d0; --accent:#c8401a;
     --accent2:#2a5c45; --muted:#8a8070; --card:#faf7f2; --border:#d8d0c0;
   }
-  html { overflow-x:hidden; }
-  body { overflow-x:hidden; background:var(--cream); color:var(--ink); font-family:'DM Sans',sans-serif; -webkit-text-size-adjust:100%; }
-  .app { min-height:100vh; width:100%; max-width:100vw; overflow-x:hidden; background:var(--cream);
+  html, body { overflow-x:hidden; max-width:100%; }
+  body { background:var(--cream); color:var(--ink); font-family:'DM Sans',sans-serif; -webkit-text-size-adjust:100%; }
+  .app { min-height:100vh; width:100%; overflow:hidden; background:var(--cream);
     background-image: radial-gradient(ellipse at 10% 20%,rgba(200,64,26,.06) 0%,transparent 50%),
       radial-gradient(ellipse at 90% 80%,rgba(42,92,69,.06) 0%,transparent 50%); }
 
@@ -62,7 +62,28 @@ const css = `
   .custom-inp-cancel { padding:.3rem .6rem; border-radius:20px; border:1.5px solid var(--border);
     background:var(--cream); color:var(--muted); font-size:.78rem; cursor:pointer; flex-shrink:0; }
 
-  .exam-rows { display:flex; flex-direction:column; gap:.5rem; margin-top:.2rem; }
+  /* TOPIC CHIPS per subject */
+  .topics-section { display:flex; flex-direction:column; gap:.6rem; margin-top:.2rem; }
+  .topic-subj-block { background:var(--cream); border:1px solid var(--border); border-radius:10px; padding:.7rem .9rem; }
+  .topic-subj-name { font-size:.8rem; font-weight:600; color:var(--ink); margin-bottom:.45rem; }
+  .topic-chip-wrap { display:flex; flex-wrap:wrap; gap:.35rem; align-items:center; }
+  .topic-chip { padding:.22rem .65rem; border-radius:20px; border:1.5px solid var(--accent);
+    font-size:.72rem; font-weight:500; background:rgba(200,64,26,.07); color:var(--accent);
+    cursor:pointer; transition:all .15s; -webkit-tap-highlight-color:transparent; }
+  .topic-chip:hover { background:rgba(200,64,26,.15); }
+  .topic-add-btn { width:24px; height:24px; border-radius:50%; border:1.5px solid var(--border);
+    background:var(--cream); color:var(--muted); font-size:1rem; line-height:1;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+    transition:all .15s; padding:0; }
+  .topic-add-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .topic-inp-row { display:flex; align-items:center; gap:.35rem; margin-top:.35rem; width:100%; }
+  .topic-inp { flex:1; background:var(--cream); border:1.5px solid var(--accent);
+    border-radius:20px; padding:.25rem .75rem; font-family:'DM Sans',sans-serif;
+    font-size:.72rem; font-weight:500; color:var(--ink); outline:none; min-width:0; }
+  .topic-inp-ok { padding:.25rem .65rem; border-radius:20px; border:none;
+    background:var(--accent); color:#fff; font-size:.72rem; font-weight:500; cursor:pointer; flex-shrink:0; }
+  .topic-inp-cancel { padding:.25rem .5rem; border-radius:20px; border:1.5px solid var(--border);
+    background:var(--cream); color:var(--muted); font-size:.72rem; cursor:pointer; flex-shrink:0; }
   .exam-row { display:flex; align-items:center; gap:.7rem; background:var(--cream);
     border:1px solid var(--border); border-radius:10px; padding:.65rem .9rem; min-width:0; }
 
@@ -208,7 +229,7 @@ const css = `
   @keyframes pulse   { 0%,100%{opacity:.5} 50%{opacity:1} }
 `;
 
-const VERSION    = "v1.5";
+const VERSION    = "v1.6";
 const SUBJECTS   = ["Mathematik","Deutsch","Englisch","Biologie","Geschichte","Physik","Chemie","Latein"];
 const SUBJ_COLOR = { Mathematik:"math",Deutsch:"german",Englisch:"english",Biologie:"bio",Geschichte:"history",Physik:"physics",Chemie:"chem",Latein:"latin" };
 const MONTHS_DE  = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
@@ -265,10 +286,12 @@ function DatePicker({ value, onChange }) {
   function openPicker() {
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
-      // Align popup's right edge to button's right edge, clamp to viewport
-      let left = r.right - 268;
-      if (left < 8) left = 8;
+      // On desktop: align popup left to button left. On mobile: clamp to viewport.
+      let left = r.left;
+      // If popup would overflow right side, shift left
       if (left + 268 > window.innerWidth - 8) left = window.innerWidth - 268 - 8;
+      // Never go off left edge
+      if (left < 8) left = 8;
       const top = r.bottom + 6;
       setPos({ top, left });
     }
@@ -459,7 +482,6 @@ export default function App() {
   const [screen,   setScreen]   = useState("onboard");
   const [name,     setName]     = useState("");
   const [hours,    setHours]    = useState("2");
-  const [weakness, setWeakness] = useState("");
   const [selected, setSelected] = useState([]);
   const [dates,    setDates]    = useState({});
   const [plan,     setPlan]     = useState(null);
@@ -467,6 +489,9 @@ export default function App() {
   const [error,    setError]    = useState("");
   const [showCustom, setShowCustom] = useState(false);
   const [customVal,  setCustomVal]  = useState("");
+  const [topics,     setTopics]     = useState({}); // { subjectName: [topic1, topic2, ...] }
+  const [topicInput, setTopicInput] = useState({}); // { subjectName: "" } current input value
+  const [showTopicInput, setShowTopicInput] = useState({}); // { subjectName: bool }
   const customRef = useRef(null);
   const timerRef  = useRef(null);
   const todayStr  = localStr(new Date());
@@ -482,6 +507,17 @@ export default function App() {
     setCustomVal(""); setShowCustom(false);
   }
 
+  function addTopic(subj) {
+    const v = (topicInput[subj]||"").trim();
+    if (!v) { setShowTopicInput(p=>({...p,[subj]:false})); return; }
+    setTopics(p=>({...p,[subj]:[...(p[subj]||[]),v]}));
+    setTopicInput(p=>({...p,[subj]:""}));
+    setShowTopicInput(p=>({...p,[subj]:false}));
+  }
+  function removeTopic(subj, idx) {
+    setTopics(p=>({...p,[subj]:(p[subj]||[]).filter((_,i)=>i!==idx)}));
+  }
+
   useEffect(() => { if (showCustom) customRef.current?.focus(); }, [showCustom]);
 
   const missingDates = selected.filter(s => !dates[s]);
@@ -493,10 +529,10 @@ export default function App() {
     let i = 0;
     timerRef.current = setInterval(()=>setLoadMsg(LOAD_MSGS[i++%LOAD_MSGS.length]), 1400);
     try {
-      const subjects = selected.map(s=>({name:s, examDate:dates[s]||""}));
+      const subjects = selected.map(s=>({name:s, examDate:dates[s]||"", topics:topics[s]||[]}));
       const res = await fetch("/api/generate-plan",{
         method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({studentData:{name,hoursPerDay:hours,weaknesses:weakness,subjects}})
+        body:JSON.stringify({studentData:{name,hoursPerDay:hours,subjects}})
       });
       clearInterval(timerRef.current);
       if (!res.ok) throw new Error();
@@ -586,25 +622,46 @@ export default function App() {
 
           {selected.length > 0 && (
             <div className="field">
-              <div className="field-label">Prüfungstermine</div>
-              <div className="exam-rows">
+              <div className="field-label">Prüfungstermine & Themen</div>
+              <div className="topics-section">
                 {selected.map(s=>(
-                  <div key={s} className="exam-row">
-                    <div className="exam-name">{s}</div>
-                    <DatePicker
-                      value={dates[s]||""}
-                      onChange={d=>setDates(p=>({...p,[s]:d}))}
-                    />
+                  <div key={s} className="topic-subj-block">
+                    {/* Subject name + date picker row */}
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:".5rem"}}>
+                      <div className="topic-subj-name">{s}</div>
+                      <DatePicker value={dates[s]||""} onChange={d=>setDates(p=>({...p,[s]:d}))}/>
+                    </div>
+                    {/* Topics chips */}
+                    <div className="topic-chip-wrap">
+                      {(topics[s]||[]).map((t,i)=>(
+                        <span key={i} className="topic-chip" onClick={()=>removeTopic(s,i)}>{t} ×</span>
+                      ))}
+                      {!showTopicInput[s] && (
+                        <button className="topic-add-btn" onClick={()=>setShowTopicInput(p=>({...p,[s]:true}))} title="Thema hinzufügen">+</button>
+                      )}
+                    </div>
+                    {showTopicInput[s] && (
+                      <div className="topic-inp-row">
+                        <input
+                          autoFocus
+                          className="topic-inp"
+                          placeholder="Thema eingeben…"
+                          value={topicInput[s]||""}
+                          onChange={e=>setTopicInput(p=>({...p,[s]:e.target.value}))}
+                          onKeyDown={e=>{
+                            if(e.key==="Enter") addTopic(s);
+                            if(e.key==="Escape") setShowTopicInput(p=>({...p,[s]:false}));
+                          }}
+                        />
+                        <button className="topic-inp-ok" onClick={()=>addTopic(s)}>+</button>
+                        <button className="topic-inp-cancel" onClick={()=>setShowTopicInput(p=>({...p,[s]:false}))}>✕</button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
           )}
-
-          <div className="field">
-            <div className="field-label">Schwächen / Wünsche (optional)</div>
-            <textarea className="inp" placeholder="z.B. Integralrechnung fällt mir schwer…" value={weakness} onChange={e=>setWeakness(e.target.value)}/>
-          </div>
 
           <button className="btn-main" onClick={generate} disabled={!canGenerate}>
             <span>✦</span> KI-Lernplan generieren
