@@ -34,6 +34,7 @@ export default async function handler(req, res) {
 
   const activeDays = weekdays.filter(d => daySubjects[d].length > 0);
   const hours = parseFloat(studentData.hoursPerDay) || 2;
+  const totalMinutes = Math.round(hours * 60);
 
   const subjectInfoStr = subjectInfo.map(s =>
     `${s.name}: Prüfung ${s.examDate || "kein Datum"}, lernbar bis: ${s.validDays.slice(-1)[0] || "—"}`
@@ -46,7 +47,7 @@ export default async function handler(req, res) {
   const prompt = `Du bist ein Abitur-Lerncoach. Erstelle einen Lernplan.
 
 Schüler: ${studentData.name}
-Tägliche Lernzeit: ${hours} Stunden
+Tägliche Lernzeit: EXAKT ${totalMinutes} Minuten (= ${hours} Stunden). Diese Zeit MUSS pro Tag exakt eingehalten werden.
 Schwächen: ${studentData.weaknesses || "keine"}
 
 Fächer (mit Prüfungsdaten):
@@ -55,25 +56,23 @@ ${subjectInfoStr}
 Verfügbare Fächer pro Tag:
 ${dayMapStr}
 
-WICHTIGE REGELN:
-1. Entscheide selbst wie viele Lerneinheiten pro Tag sinnvoll sind, basierend auf ${hours} Stunden/Tag:
-   - Bei 1h: meist 1 Einheit, manchmal 2 kurze
-   - Bei 2h: 2 Einheiten
-   - Bei 3h: 2-3 Einheiten
-   - Bei 4-5h: 3-4 Einheiten
-2. Verteile die Zeit sinnvoll: z.B. 45 min, 60 min, 90 min pro Einheit. Gesamtzeit pro Tag = ${hours}h.
+STRIKTE REGELN:
+1. Die Summe aller "durationMinutes" eines Tages MUSS exakt ${totalMinutes} ergeben. Nicht mehr, nicht weniger.
+2. Entscheide wie viele Einheiten pro Tag sinnvoll sind um auf exakt ${totalMinutes} Minuten zu kommen.
+   Typische Einheitsgrößen: 30, 45, 60, 90 Minuten.
 3. Verwende NUR die aufgelisteten Fächer für den jeweiligen Tag.
-4. Themen sollen konkret und lehrreich sein.
-5. Fächer mit näherem Prüfungstermin öfter einplanen.
-6. Für jede Einheit ein "duration" Feld angeben (z.B. "45 min", "1 Std.", "90 min").
+4. Themen konkret und zum Fach passend.
+5. Fächer mit näherem Prüfungstermin häufiger einplanen.
 
-Antworte NUR mit JSON:
+Antworte NUR mit JSON (kein Markdown, keine Backticks):
 {
   "planSummary": "2-3 Sätze auf Deutsch",
   "dailyPlan": [
-    {"date": "YYYY-MM-DD", "subject": "Fachname", "topic": "Konkretes Thema", "duration": "60 min"}
+    {"date": "YYYY-MM-DD", "subject": "Fachname", "topic": "Konkretes Thema", "durationMinutes": 60}
   ]
-}`;
+}
+
+WICHTIG: durationMinutes ist eine Zahl (integer), kein String. Summe pro Tag = exakt ${totalMinutes}.`;
 
   try {
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -87,7 +86,7 @@ Antworte NUR mit JSON:
         temperature: 0.3,
         max_tokens: 4000,
         messages: [
-          { role: "system", content: "Antworte AUSSCHLIESSLICH mit reinem JSON. Kein Markdown, keine Backticks, kein Text davor oder danach." },
+          { role: "system", content: "Antworte AUSSCHLIESSLICH mit reinem JSON-Objekt. Kein Markdown, keine Backticks, kein Text." },
           { role: "user", content: prompt }
         ],
       }),
@@ -106,7 +105,7 @@ Antworte NUR mit JSON:
     try { parsed = JSON.parse(clean); }
     catch (e) { return res.status(500).json({ error: "AI returned invalid JSON" }); }
 
-    // Hard filter: remove entries after exam date or with wrong subjects
+    // Hard filter: remove entries after exam date or wrong subjects
     const allowedSubjects = studentData.subjects.map(s => s.name);
     const examDates = {};
     studentData.subjects.forEach(s => { if (s.examDate) examDates[s.name] = s.examDate; });
@@ -116,6 +115,28 @@ Antworte NUR mit JSON:
         if (!allowedSubjects.includes(entry.subject)) return false;
         if (examDates[entry.subject] && entry.date >= examDates[entry.subject]) return false;
         return true;
+      });
+
+      // Server-side correction: rescale each day's durations to exactly match totalMinutes
+      const byDate = {};
+      parsed.dailyPlan.forEach(e => {
+        if (!byDate[e.date]) byDate[e.date] = [];
+        byDate[e.date].push(e);
+      });
+      Object.values(byDate).forEach(entries => {
+        const sum = entries.reduce((a, e) => a + (e.durationMinutes || 60), 0);
+        if (sum !== totalMinutes && sum > 0) {
+          const factor = totalMinutes / sum;
+          let remaining = totalMinutes;
+          entries.forEach((e, i) => {
+            if (i === entries.length - 1) {
+              e.durationMinutes = remaining;
+            } else {
+              e.durationMinutes = Math.round((e.durationMinutes || 60) * factor);
+              remaining -= e.durationMinutes;
+            }
+          });
+        }
       });
     }
 
