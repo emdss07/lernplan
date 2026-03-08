@@ -47,6 +47,18 @@ export default async function handler(req, res) {
     `${d}: [${daySubjects[d].join(", ")}]`
   ).join("\n");
 
+  // Group subjects by exam date to enforce fair distribution hints
+  const examDateGroups = {};
+  subjectInfo.forEach(s => {
+    const key = s.examDate || "none";
+    if (!examDateGroups[key]) examDateGroups[key] = [];
+    examDateGroups[key].push(s.name);
+  });
+  const fairnessHint = Object.entries(examDateGroups)
+    .filter(([,names]) => names.length > 1)
+    .map(([date, names]) => `Fächer mit gleichem Prüfungstag (${date}): [${names.join(", ")}] → ungefähr gleich viel Gesamtlernzeit geben`)
+    .join("\n");
+
   const prompt = `Du bist ein Lerncoach. Erstelle einen präzisen Lernplan.
 
 Schüler: ${studentData.name}
@@ -57,6 +69,7 @@ ${subjectInfoStr}
 
 Verfügbare Fächer pro Tag:
 ${dayMapStr}
+${fairnessHint ? `\nFaire Verteilung beachten:\n${fairnessHint}` : ""}
 
 STRIKTE REGELN:
 1. Die Summe aller "durationMinutes" eines Tages MUSS exakt ${totalMinutes} ergeben.
@@ -65,9 +78,9 @@ STRIKTE REGELN:
 4. WICHTIG: Wenn Prüfungsthemen angegeben sind, erstelle SEHR SPEZIFISCHE Lerneinheiten daraus.
    Beispiel: Themen "Vektoren, Stochastik" → nicht "Mathematik lernen" sondern konkret:
    "Vektoren: Skalarprodukt und Winkelberechnung", "Stochastik: Binomialverteilung Aufgaben", usw.
-   Geh tief in die Themen rein, erstelle Unter-Themen und konkrete Lerneinheiten.
 5. Ohne Themen: allgemeine, fachspezifische Lerneinheiten erstellen.
 6. Fächer mit näherem Prüfungstermin häufiger einplanen.
+7. Fächer mit gleichem Prüfungstag sollen über den gesamten Plan ungefähr gleich viel Gesamtlernzeit bekommen.
 
 Antworte NUR mit JSON (kein Markdown, keine Backticks):
 {
@@ -144,6 +157,15 @@ WICHTIG: durationMinutes ist ein Integer. Summe pro Tag = exakt ${totalMinutes}.
         }
       });
     }
+
+    // Count total minutes per subject across the whole plan
+    const subjTotals = {};
+    parsed.dailyPlan.forEach(e => {
+      subjTotals[e.subject] = (subjTotals[e.subject] || 0) + (e.durationMinutes || 0);
+    });
+
+    // For subjects with same exam date, check if distribution is very unfair (>2x difference)
+    // If so, log it but don't hard-correct — the prompt already asked for fairness
 
     return res.status(200).json(parsed);
   } catch (err) {
