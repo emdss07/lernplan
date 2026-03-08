@@ -1,55 +1,89 @@
-// api/generate-plan.js
-// Runs on Vercel — API key never reaches the browser
+// api/generate-plan.js — Vercel serverless, API key never reaches browser
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const { studentData } = req.body;
-  if (!studentData) {
-    return res.status(400).json({ error: "Missing studentData" });
+  if (!studentData) return res.status(400).json({ error: "Missing studentData" });
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  function localStr(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   }
 
-  // Calculate today and the next 28 days as concrete dates
-  const today = new Date();
-  const dates = [];
-  for (let i = 0; i < 28; i++) {
+  // Build 28 weekdays, but only include a subject on days BEFORE its exam date
+  const weekdays = [];
+  for (let i = 0; i < 42; i++) { // scan 42 days to get 28 weekdays
     const d = new Date(today);
     d.setDate(today.getDate() + i);
-    dates.push({
-      index: i,
-      dateStr: d.toISOString().split("T")[0],
-      weekday: d.getDay(), // 0=Sun,1=Mon,...,6=Sat
-      week: Math.floor(i / 7) + 1,
-    });
+    if (d.getDay() >= 1 && d.getDay() <= 5) {
+      weekdays.push(localStr(d));
+      if (weekdays.length >= 28) break;
+    }
   }
 
-  // Only weekdays (Mon-Fri) available for study
-  const weekdays = dates.filter(d => d.weekday >= 1 && d.weekday <= 5);
+  // For each subject, figure out which days are valid (before exam date)
+  const subjects = studentData.subjects;
+  const subjectInfo = subjects.map(s => {
+    const examDate = s.examDate || null;
+    const validDays = examDate
+      ? weekdays.filter(d => d < examDate)
+      : weekdays;
+    return { name: s.name, examDate, validDays };
+  });
 
-  const prompt = `Du bist ein Abitur-Lerncoach. Erstelle einen 28-Tage-Lernplan.
+  // Build a per-day availability map: date -> [subject names available that day]
+  const daySubjects = {};
+  weekdays.forEach(d => {
+    daySubjects[d] = subjectInfo.filter(s => s.validDays.includes(d)).map(s => s.name);
+  });
+
+  // Only include days where at least one subject is available
+  const activeDays = weekdays.filter(d => daySubjects[d].length > 0);
+
+  const hours = parseFloat(studentData.hoursPerDay) || 2;
+  // sessions per day: 1 session per ~1.5h, min 1, max 3
+  const sessionsPerDay = Math.min(3, Math.max(1, Math.round(hours / 1.5)));
+
+  const subjectInfoStr = subjectInfo.map(s =>
+    `${s.name}: Prüfung am ${s.examDate || "kein Datum"}, lernbar bis: ${s.validDays.slice(-1)[0] || "—"}`
+  ).join("\n");
+
+  const dayMapStr = activeDays.map(d =>
+    `${d}: verfügbare Fächer: [${daySubjects[d].join(", ")}]`
+  ).join("\n");
+
+  const prompt = `Du bist ein Abitur-Lerncoach. Erstelle einen präzisen Lernplan.
 
 Schüler: ${studentData.name}
-Fächer & Prüfungstermine: ${studentData.subjects.map(s => `${s.name} am ${s.examDate || "kein Datum"}`).join(", ")}
+Tägliche Lernzeit: ${studentData.hoursPerDay} Stunden (${sessionsPerDay} Lerneinheit(en) pro Tag)
 Schwächen: ${studentData.weaknesses || "keine angegeben"}
-Stunden/Tag: ${studentData.hoursPerDay}
 
-Verfügbare Lerntage (nur Wochentage): ${weekdays.map(d => d.dateStr).join(", ")}
+Fächer und ihre Prüfungstermine:
+${subjectInfoStr}
 
-Weise jedem Lerntag genau ein Fach und ein konkretes Thema zu. Verteile die Fächer sinnvoll.
-Priorisiere Fächer mit näher liegendem Prüfungstermin.
+Pro Tag verfügbare Fächer (NUR diese dürfen an diesem Tag eingetragen werden):
+${dayMapStr}
 
-Antworte NUR mit diesem JSON (kein Markdown, keine Erklärung, kein Text davor oder danach):
+Regeln:
+- Pro Tag GENAU ${sessionsPerDay} Einträge — jeder mit einem anderen Fach falls möglich.
+- Verwende an jedem Tag NUR die dort aufgelisteten verfügbaren Fächer.
+- Themen sollen konkret, lehrreich und zum Fach passend sein (z.B. "Ableitungsregeln", "Epochen der Romantik").
+- Fächer mit näherem Prüfungstermin häufiger einplanen.
+- Wiederholungen in der letzten Woche vor der Prüfung einbauen.
+
+Antworte NUR mit diesem JSON, ohne Markdown, ohne Erklärung:
 {
-  "planSummary": "2-3 Sätze über den Plan",
+  "planSummary": "2-3 Sätze Zusammenfassung auf Deutsch",
   "dailyPlan": [
-    {"date": "2025-03-10", "subject": "Mathematik", "topic": "Differentialrechnung"},
-    {"date": "2025-03-11", "subject": "Deutsch", "topic": "Textanalyse"}
+    {"date": "YYYY-MM-DD", "subject": "Fachname", "topic": "Konkretes Thema"},
+    {"date": "YYYY-MM-DD", "subject": "AnderesFach", "topic": "Konkretes Thema"}
   ]
 }
 
-Erstelle einen Eintrag für jeden der ${weekdays.length} Lerntage. Nutze NUR diese Daten: ${weekdays.map(d => d.dateStr).join(", ")}`;
+Erstelle Einträge für alle ${activeDays.length} aktiven Lerntage, je ${sessionsPerDay} Einträge pro Tag.`;
 
   try {
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -60,14 +94,14 @@ Erstelle einen Eintrag für jeden der ${weekdays.length} Lerntage. Nutze NUR die
       },
       body: JSON.stringify({
         model: "llama-3.1-8b-instant",
-        temperature: 0.5,
-        max_tokens: 2000,
+        temperature: 0.3,
+        max_tokens: 4000,
         messages: [
           {
             role: "system",
-            content: "Du bist ein Abitur-Lerncoach. Antworte AUSSCHLIESSLICH mit reinem JSON. Kein Markdown, keine Backticks, keine Erklärung. Nur das JSON-Objekt.",
+            content: "Antworte AUSSCHLIESSLICH mit reinem JSON-Objekt. Kein Text, keine Backticks, kein Markdown. Nur { ... }."
           },
-          { role: "user", content: prompt },
+          { role: "user", content: prompt }
         ],
       }),
     });
@@ -75,21 +109,33 @@ Erstelle einen Eintrag für jeden der ${weekdays.length} Lerntage. Nutze NUR die
     if (!response.ok) {
       const err = await response.text();
       console.error("Groq error:", err);
-      return res.status(500).json({ error: `AI service error: ${err}` });
+      return res.status(500).json({ error: `Groq error: ${err}` });
     }
 
     const data = await response.json();
-    const text = data.choices?.[0]?.message?.content || "";
-
-    // Strip any accidental markdown fences
-    const clean = text.replace(/```json|```/gi, "").trim();
+    const raw = data.choices?.[0]?.message?.content || "";
+    const clean = raw.replace(/```json|```/gi, "").trim();
 
     let parsed;
     try {
       parsed = JSON.parse(clean);
-    } catch (parseErr) {
-      console.error("JSON parse error:", parseErr, "\nRaw text:", clean);
-      return res.status(500).json({ error: "Invalid AI response format" });
+    } catch (e) {
+      console.error("Parse error. Raw:", clean);
+      return res.status(500).json({ error: "AI returned invalid JSON" });
+    }
+
+    // Hard server-side filter: remove entries after their subject's exam date
+    // and remove entries with subjects not in the allowed list
+    const allowedSubjects = studentData.subjects.map(s => s.name);
+    const examDates = {};
+    studentData.subjects.forEach(s => { if (s.examDate) examDates[s.name] = s.examDate; });
+
+    if (parsed.dailyPlan) {
+      parsed.dailyPlan = parsed.dailyPlan.filter(entry => {
+        if (!allowedSubjects.includes(entry.subject)) return false;
+        if (examDates[entry.subject] && entry.date >= examDates[entry.subject]) return false;
+        return true;
+      });
     }
 
     return res.status(200).json(parsed);
