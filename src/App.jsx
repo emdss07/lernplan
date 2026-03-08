@@ -33,8 +33,7 @@ const css = `
     padding:1.4rem; display:flex; flex-direction:column; gap:1.1rem; box-shadow:0 4px 24px rgba(0,0,0,.06); }
   .field { display:flex; flex-direction:column; gap:.35rem; }
   .field-label { font-size:.72rem; font-weight:500; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; }
-  .field-label-row { display:flex; align-items:center; justify-content:space-between; }
-  .field-hint { font-size:.7rem; color:var(--accent); font-weight:500; }
+  .exam-name { font-size:.86rem; font-weight:500; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .two-col { display:grid; grid-template-columns:1fr 1fr; gap:.9rem; }
   @media(max-width:440px){ .two-col { grid-template-columns:1fr; } }
   .inp { background:var(--cream); border:1px solid var(--border); border-radius:9px;
@@ -64,10 +63,7 @@ const css = `
 
   .exam-rows { display:flex; flex-direction:column; gap:.5rem; margin-top:.2rem; }
   .exam-row { display:flex; align-items:center; gap:.7rem; background:var(--cream);
-    border:1px solid var(--border); border-radius:10px; padding:.65rem .9rem; min-width:0; transition:border-color .18s; }
-  .exam-row.missing { border-color:rgba(200,64,26,.4); background:rgba(200,64,26,.03); }
-  .exam-name { font-size:.86rem; font-weight:500; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .exam-required { font-size:.68rem; color:var(--accent); margin-left:.3rem; }
+    border:1px solid var(--border); border-radius:10px; padding:.65rem .9rem; min-width:0; }
 
   .dp-wrap { position:relative; flex-shrink:0; }
   .dp-btn { display:flex; align-items:center; gap:.4rem; padding:.38rem .7rem;
@@ -76,7 +72,6 @@ const css = `
     border:1.5px solid transparent; transition:all .15s; -webkit-tap-highlight-color:transparent; }
   .dp-btn:hover { border-color:var(--accent); }
   .dp-btn.picked { background:rgba(200,64,26,.09); color:var(--accent); border-color:rgba(200,64,26,.25); }
-  .dp-btn.missing { border-color:var(--accent); background:rgba(200,64,26,.06); color:var(--accent); animation:pulse 1.5s ease infinite; }
   .dp-btn svg { width:13px; height:13px; flex-shrink:0; }
   .dp-popup { position:fixed; z-index:600; background:var(--card); border:1px solid var(--border);
     border-radius:14px; box-shadow:0 10px 40px rgba(0,0,0,.18); padding:1rem; width:268px; animation:fadeUp .15s ease both; }
@@ -174,7 +169,8 @@ const css = `
   .t-exam{background:rgba(42,92,69,.2);color:#1a4a30;font-weight:700}
   .cal-hint { font-size:.67rem; color:var(--muted); margin-top:4px; text-align:right; }
 
-  .modal-overlay { position:fixed; inset:0; background:rgba(15,14,12,.45); z-index:800;
+  .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; width:100vw; height:100vh;
+    background:rgba(15,14,12,.55); z-index:800;
     display:flex; align-items:flex-end; justify-content:center; animation:fadeIn .2s ease; padding:0; }
   @media(min-width:520px){ .modal-overlay { align-items:center; padding:1rem; } }
   .modal { background:var(--card); border-radius:20px 20px 0 0; width:100%; max-width:480px;
@@ -211,7 +207,7 @@ const css = `
   @keyframes pulse   { 0%,100%{opacity:.5} 50%{opacity:1} }
 `;
 
-const VERSION    = "v1.3";
+const VERSION    = "v1.4";
 const SUBJECTS   = ["Mathematik","Deutsch","Englisch","Biologie","Geschichte","Physik","Chemie","Latein"];
 const SUBJ_COLOR = { Mathematik:"math",Deutsch:"german",Englisch:"english",Biologie:"bio",Geschichte:"history",Physik:"physics",Chemie:"chem",Latein:"latin" };
 const MONTHS_DE  = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
@@ -247,7 +243,7 @@ function fmtMin(m) {
 }
 
 // ── DatePicker ─────────────────────────────────────────────
-function DatePicker({ value, onChange, highlight }) {
+function DatePicker({ value, onChange }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos]   = useState({top:0,left:0});
   const today    = new Date();
@@ -281,11 +277,11 @@ function DatePicker({ value, onChange, highlight }) {
 
   return (
     <div className="dp-wrap" ref={wrapRef}>
-      <div ref={btnRef} className={`dp-btn ${value?"picked":""} ${highlight&&!value?"missing":""}`} onClick={openPicker}>
+      <div ref={btnRef} className={`dp-btn ${value?"picked":""}`} onClick={openPicker}>
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
           <rect x="1" y="2" width="14" height="13" rx="2"/><path d="M1 6h14M5 1v2M11 1v2"/>
         </svg>
-        {value ? fmtDate(value) : "Pflichtfeld ⚠"}
+        {value ? fmtDate(value) : "Datum wählen"}
       </div>
       {open && (
         <div className="dp-popup" style={{top:pos.top, left:pos.left, position:"fixed"}}>
@@ -465,7 +461,6 @@ export default function App() {
   const [error,    setError]    = useState("");
   const [showCustom, setShowCustom] = useState(false);
   const [customVal,  setCustomVal]  = useState("");
-  const [showDateErrors, setShowDateErrors] = useState(false);
   const customRef = useRef(null);
   const timerRef  = useRef(null);
   const todayStr  = localStr(new Date());
@@ -487,11 +482,7 @@ export default function App() {
   const canGenerate  = name && selected.length > 0 && missingDates.length === 0;
 
   async function generate() {
-    if (!canGenerate) {
-      setShowDateErrors(true);
-      return;
-    }
-    setShowDateErrors(false);
+    if (!canGenerate) return;
     setError(""); setScreen("loading");
     let i = 0;
     timerRef.current = setInterval(()=>setLoadMsg(LOAD_MSGS[i++%LOAD_MSGS.length]), 1400);
@@ -589,20 +580,14 @@ export default function App() {
 
           {selected.length > 0 && (
             <div className="field">
-              <div className="field-label-row">
-                <div className="field-label">Prüfungstermine</div>
-                {showDateErrors && missingDates.length > 0 && (
-                  <div className="field-hint">⚠ Alle Termine erforderlich</div>
-                )}
-              </div>
+              <div className="field-label">Prüfungstermine</div>
               <div className="exam-rows">
                 {selected.map(s=>(
-                  <div key={s} className={`exam-row ${showDateErrors&&!dates[s]?"missing":""}`}>
+                  <div key={s} className="exam-row">
                     <div className="exam-name">{s}</div>
                     <DatePicker
                       value={dates[s]||""}
-                      onChange={d=>{ setDates(p=>({...p,[s]:d})); setShowDateErrors(false); }}
-                      highlight={showDateErrors && !dates[s]}
+                      onChange={d=>setDates(p=>({...p,[s]:d}))}
                     />
                   </div>
                 ))}
@@ -615,7 +600,7 @@ export default function App() {
             <textarea className="inp" placeholder="z.B. Integralrechnung fällt mir schwer…" value={weakness} onChange={e=>setWeakness(e.target.value)}/>
           </div>
 
-          <button className="btn-main" onClick={generate} disabled={!name||selected.length===0}>
+          <button className="btn-main" onClick={generate} disabled={!canGenerate}>
             <span>✦</span> KI-Lernplan generieren
           </button>
         </div>
