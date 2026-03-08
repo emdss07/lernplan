@@ -229,7 +229,7 @@ const css = `
   @keyframes pulse   { 0%,100%{opacity:.5} 50%{opacity:1} }
 `;
 
-const VERSION    = "v1.6";
+const VERSION    = "v1.7";
 const SUBJECTS   = ["Mathematik","Deutsch","Englisch","Biologie","Geschichte","Physik","Chemie","Latein"];
 const SUBJ_COLOR = { Mathematik:"math",Deutsch:"german",Englisch:"english",Biologie:"bio",Geschichte:"history",Physik:"physics",Chemie:"chem",Latein:"latin" };
 const MONTHS_DE  = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
@@ -286,11 +286,10 @@ function DatePicker({ value, onChange }) {
   function openPicker() {
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
-      // On desktop: align popup left to button left. On mobile: clamp to viewport.
-      let left = r.left;
-      // If popup would overflow right side, shift left
+      // Align popup's RIGHT edge to button's RIGHT edge
+      let left = r.right - 268;
+      // Clamp so popup never goes off screen
       if (left + 268 > window.innerWidth - 8) left = window.innerWidth - 268 - 8;
-      // Never go off left edge
       if (left < 8) left = 8;
       const top = r.bottom + 6;
       setPos({ top, left });
