@@ -24,7 +24,7 @@ export default async function handler(req, res) {
   const subjectInfo = subjects.map(s => {
     const examDate = s.examDate || null;
     const validDays = examDate ? weekdays.filter(d => d < examDate) : weekdays;
-    return { name: s.name, examDate, validDays };
+    return { name: s.name, examDate, validDays, topics: s.topics || [] };
   });
 
   const daySubjects = {};
@@ -36,43 +36,48 @@ export default async function handler(req, res) {
   const hours = parseFloat(studentData.hoursPerDay) || 2;
   const totalMinutes = Math.round(hours * 60);
 
-  const subjectInfoStr = subjectInfo.map(s =>
-    `${s.name}: Prüfung ${s.examDate || "kein Datum"}, lernbar bis: ${s.validDays.slice(-1)[0] || "—"}`
-  ).join("\n");
+  const subjectInfoStr = subjectInfo.map(s => {
+    const topicList = (s.topics && s.topics.length > 0)
+      ? `Prüfungsthemen: ${s.topics.join(", ")}`
+      : "Prüfungsthemen: nicht angegeben (allgemeine Themen verwenden)";
+    return `${s.name}: Prüfung ${s.examDate || "kein Datum"}, lernbar bis: ${s.validDays.slice(-1)[0] || "—"}, ${topicList}`;
+  }).join("\n");
 
   const dayMapStr = activeDays.map(d =>
     `${d}: [${daySubjects[d].join(", ")}]`
   ).join("\n");
 
-  const prompt = `Du bist ein Lerncoach. Erstelle einen Lernplan.
+  const prompt = `Du bist ein Lerncoach. Erstelle einen präzisen Lernplan.
 
 Schüler: ${studentData.name}
 Tägliche Lernzeit: EXAKT ${totalMinutes} Minuten (= ${hours} Stunden). Diese Zeit MUSS pro Tag exakt eingehalten werden.
-Schwächen: ${studentData.weaknesses || "keine"}
 
-Fächer (mit Prüfungsdaten):
+Fächer (mit Prüfungsdaten und Prüfungsthemen):
 ${subjectInfoStr}
 
 Verfügbare Fächer pro Tag:
 ${dayMapStr}
 
 STRIKTE REGELN:
-1. Die Summe aller "durationMinutes" eines Tages MUSS exakt ${totalMinutes} ergeben. Nicht mehr, nicht weniger.
-2. Entscheide wie viele Einheiten pro Tag sinnvoll sind um auf exakt ${totalMinutes} Minuten zu kommen.
-   Typische Einheitsgrößen: 30, 45, 60, 90 Minuten.
+1. Die Summe aller "durationMinutes" eines Tages MUSS exakt ${totalMinutes} ergeben.
+2. Entscheide wie viele Einheiten sinnvoll sind. Typisch: 30, 45, 60, 90 min.
 3. Verwende NUR die aufgelisteten Fächer für den jeweiligen Tag.
-4. Themen konkret und zum Fach passend.
-5. Fächer mit näherem Prüfungstermin häufiger einplanen.
+4. WICHTIG: Wenn Prüfungsthemen angegeben sind, erstelle SEHR SPEZIFISCHE Lerneinheiten daraus.
+   Beispiel: Themen "Vektoren, Stochastik" → nicht "Mathematik lernen" sondern konkret:
+   "Vektoren: Skalarprodukt und Winkelberechnung", "Stochastik: Binomialverteilung Aufgaben", usw.
+   Geh tief in die Themen rein, erstelle Unter-Themen und konkrete Lerneinheiten.
+5. Ohne Themen: allgemeine, fachspezifische Lerneinheiten erstellen.
+6. Fächer mit näherem Prüfungstermin häufiger einplanen.
 
 Antworte NUR mit JSON (kein Markdown, keine Backticks):
 {
   "planSummary": "2-3 Sätze auf Deutsch",
   "dailyPlan": [
-    {"date": "YYYY-MM-DD", "subject": "Fachname", "topic": "Konkretes Thema", "durationMinutes": 60}
+    {"date": "YYYY-MM-DD", "subject": "Fachname", "topic": "Sehr spezifisches Thema", "durationMinutes": 60}
   ]
 }
 
-WICHTIG: durationMinutes ist eine Zahl (integer), kein String. Summe pro Tag = exakt ${totalMinutes}.`;
+WICHTIG: durationMinutes ist ein Integer. Summe pro Tag = exakt ${totalMinutes}.`;
 
   try {
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
