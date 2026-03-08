@@ -44,7 +44,7 @@ export default async function handler(req, res) {
     `${d}: [${daySubjects[d].join(", ")}]`
   ).join("\n");
 
-  const prompt = `Du bist ein Abitur-Lerncoach. Erstelle einen Lernplan.
+  const prompt = `Du bist ein Lerncoach. Erstelle einen Lernplan.
 
 Schüler: ${studentData.name}
 Tägliche Lernzeit: EXAKT ${totalMinutes} Minuten (= ${hours} Stunden). Diese Zeit MUSS pro Tag exakt eingehalten werden.
