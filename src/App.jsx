@@ -9,9 +9,11 @@ const css = `
     --ink:#0f0e0c; --cream:#f5f0e8; --warm:#e8e0d0; --accent:#c8401a;
     --accent2:#2a5c45; --muted:#8a8070; --card:#faf7f2; --border:#d8d0c0;
   }
-  html, body { overflow-x:hidden; max-width:100%; }
-  body { background:var(--cream); color:var(--ink); font-family:'DM Sans',sans-serif; -webkit-text-size-adjust:100%; }
-  .app { min-height:100vh; width:100%; overflow:hidden; background:var(--cream);
+  html { overflow-x:hidden; }
+  html.modal-open { overflow:hidden; }
+  body { overflow-x:hidden; max-width:100vw; background:var(--cream); color:var(--ink); font-family:'DM Sans',sans-serif; -webkit-text-size-adjust:100%; position:relative; }
+  body.modal-open { overflow:hidden; touch-action:none; }
+  .app { min-height:100vh; width:100%; max-width:100vw; overflow-x:hidden; background:var(--cream);
     background-image: radial-gradient(ellipse at 10% 20%,rgba(200,64,26,.06) 0%,transparent 50%),
       radial-gradient(ellipse at 90% 80%,rgba(42,92,69,.06) 0%,transparent 50%); }
 
@@ -21,6 +23,8 @@ const css = `
   .nav-logo span { color:var(--accent); }
   .nav-version { font-size:.68rem; color:var(--muted); margin-left:.5rem; background:var(--warm);
     border:1px solid var(--border); border-radius:20px; padding:.15rem .55rem; }
+  .nav-by { font-size:.65rem; color:var(--muted); margin-left:auto; letter-spacing:.03em; }
+  .nav-by em { font-style:italic; color:var(--accent); }
 
   .onboard { width:100%; max-width:520px; margin:0 auto; padding:2.5rem 1.25rem 4rem; animation:fadeUp .5s ease both; }
   .eyebrow { font-size:.7rem; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); font-weight:500; margin-bottom:.5rem; }
@@ -229,7 +233,7 @@ const css = `
   @keyframes pulse   { 0%,100%{opacity:.5} 50%{opacity:1} }
 `;
 
-const VERSION    = "v1.7";
+const VERSION    = "v1.8";
 const SUBJECTS   = ["Mathematik","Deutsch","Englisch","Biologie","Geschichte","Physik","Chemie","Latein"];
 const SUBJ_COLOR = { Mathematik:"math",Deutsch:"german",Englisch:"english",Biologie:"bio",Geschichte:"history",Physik:"physics",Chemie:"chem",Latein:"latin" };
 const MONTHS_DE  = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
@@ -286,9 +290,8 @@ function DatePicker({ value, onChange }) {
   function openPicker() {
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
-      // Align popup's RIGHT edge to button's RIGHT edge
-      let left = r.right - 268;
-      // Clamp so popup never goes off screen
+      // Center popup under button, then clamp to viewport
+      let left = r.left + r.width / 2 - 134; // 134 = half of 268
       if (left + 268 > window.innerWidth - 8) left = window.innerWidth - 268 - 8;
       if (left < 8) left = 8;
       const top = r.bottom + 6;
@@ -340,9 +343,15 @@ function DatePicker({ value, onChange }) {
 // ── Day Modal ──────────────────────────────────────────────
 function DayModal({ dateStr, entries, examName, onClose }) {
   useEffect(() => {
+    document.body.classList.add("modal-open");
+    document.documentElement.classList.add("modal-open");
     function onKey(e) { if (e.key==="Escape") onClose(); }
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    return () => {
+      document.body.classList.remove("modal-open");
+      document.documentElement.classList.remove("modal-open");
+      document.removeEventListener("keydown", onKey);
+    };
   }, [onClose]);
 
   const totalMin = entries.reduce((a,e)=>a+(e.durationMinutes||0),0);
@@ -580,6 +589,7 @@ export default function App() {
         <div className="version-pill">{VERSION}</div>
         <h1 className="hero-title">Dein <em>smarter</em> Lernplan — von KI erstellt</h1>
         <p className="hero-sub">Gib deine Fächer und Prüfungstermine ein. Die KI erstellt in Sekunden einen personalisierten Lernplan.</p>
+        <p style={{fontSize:".72rem",color:"var(--muted)",marginTop:"-.5rem",marginBottom:"1.5rem"}}>by <em style={{fontStyle:"italic",color:"var(--accent)"}}>Eduardo</em></p>
         {error && <div className="err">⚠ {error}</div>}
         <div className="form-card">
           <div className="two-col">
@@ -675,6 +685,7 @@ export default function App() {
       <style>{GOOGLE_FONTS}{css}</style>
       <nav className="nav">
         <div className="nav-logo">Lern<span>.</span>Plan <span className="nav-version">{VERSION}</span></div>
+        <div className="nav-by">by <em>Eduardo</em></div>
       </nav>
       <div className="dash">
         <div className="dash-hi">Hallo, {name} 👋</div>
@@ -756,3 +767,4 @@ export default function App() {
     </div>
   );
 }
+
