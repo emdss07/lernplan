@@ -68,7 +68,7 @@ const css = `
 
   /* TOPIC CHIPS per subject */
   .topics-section { display:flex; flex-direction:column; gap:.6rem; margin-top:.2rem; }
-  .topic-subj-block { background:var(--cream); border:1px solid var(--border); border-radius:10px; padding:.7rem .9rem; }
+  .topic-subj-block { background:var(--cream); border:1px solid var(--border); border-radius:10px; padding:.7rem .9rem; overflow:visible; }
   .topic-subj-name { font-size:.8rem; font-weight:600; color:var(--ink); margin-bottom:.45rem; }
   .topic-chip-wrap { display:flex; flex-wrap:wrap; gap:.35rem; align-items:center; }
   .topic-chip { padding:.22rem .65rem; border-radius:20px; border:1.5px solid var(--accent);
@@ -99,7 +99,8 @@ const css = `
   .dp-btn:hover { border-color:var(--accent); }
   .dp-btn.picked { background:rgba(200,64,26,.09); color:var(--accent); border-color:rgba(200,64,26,.25); }
   .dp-btn svg { width:13px; height:13px; flex-shrink:0; }
-  .dp-popup { position:fixed; z-index:600; background:var(--card); border:1px solid var(--border);
+  .dp-popup { position:absolute; right:0; top:calc(100% + 6px); z-index:600;
+    background:var(--card); border:1px solid var(--border);
     border-radius:14px; box-shadow:0 10px 40px rgba(0,0,0,.18); padding:1rem; width:268px; animation:fadeUp .15s ease both; }
   .dp-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:.75rem; }
   .dp-month { font-family:'Fraunces',serif; font-size:.95rem; font-weight:600; }
@@ -233,7 +234,7 @@ const css = `
   @keyframes pulse   { 0%,100%{opacity:.5} 50%{opacity:1} }
 `;
 
-const VERSION    = "v1.8";
+const VERSION    = "v1.9";
 const SUBJECTS   = ["Mathematik","Deutsch","Englisch","Biologie","Geschichte","Physik","Chemie","Latein"];
 const SUBJ_COLOR = { Mathematik:"math",Deutsch:"german",Englisch:"english",Biologie:"bio",Geschichte:"history",Physik:"physics",Chemie:"chem",Latein:"latin" };
 const MONTHS_DE  = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
@@ -271,7 +272,6 @@ function fmtMin(m) {
 // ── DatePicker ─────────────────────────────────────────────
 function DatePicker({ value, onChange }) {
   const [open, setOpen] = useState(false);
-  const [pos, setPos]   = useState({top:0,left:0});
   const today    = new Date();
   const todayStr = localStr(today);
   const init     = value ? new Date(value+"T12:00:00") : today;
@@ -288,15 +288,6 @@ function DatePicker({ value, onChange }) {
   }, []);
 
   function openPicker() {
-    if (btnRef.current) {
-      const r = btnRef.current.getBoundingClientRect();
-      // Center popup under button, then clamp to viewport
-      let left = r.left + r.width / 2 - 134; // 134 = half of 268
-      if (left + 268 > window.innerWidth - 8) left = window.innerWidth - 268 - 8;
-      if (left < 8) left = 8;
-      const top = r.bottom + 6;
-      setPos({ top, left });
-    }
     setOpen(o => !o);
   }
 
@@ -314,7 +305,7 @@ function DatePicker({ value, onChange }) {
         {value ? fmtDate(value) : "Datum wählen"}
       </div>
       {open && (
-        <div className="dp-popup" style={{top:pos.top, left:pos.left}}>
+        <div className="dp-popup">
           <div className="dp-head">
             <button className="dp-nav" onClick={()=>vm===0?(setVm(11),setVy(y=>y-1)):setVm(m=>m-1)}>‹</button>
             <div className="dp-month">{MONTHS_DE[vm]} {vy}</div>
