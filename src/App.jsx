@@ -99,7 +99,7 @@ const css = `
   .dp-btn:hover { border-color:var(--accent); }
   .dp-btn.picked { background:rgba(200,64,26,.09); color:var(--accent); border-color:rgba(200,64,26,.25); }
   .dp-btn svg { width:13px; height:13px; flex-shrink:0; }
-  .dp-popup { position:absolute; right:0; top:calc(100% + 6px); z-index:600;
+  .dp-popup { position:absolute; left:calc(100% + 8px); top:50%; transform:translateY(-50%); z-index:600;
     background:var(--card); border:1px solid var(--border);
     border-radius:14px; box-shadow:0 10px 40px rgba(0,0,0,.18); padding:1rem; width:268px; animation:fadeUp .15s ease both; }
   .dp-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:.75rem; }
@@ -234,7 +234,7 @@ const css = `
   @keyframes pulse   { 0%,100%{opacity:.5} 50%{opacity:1} }
 `;
 
-const VERSION    = "v1.9";
+const VERSION    = "v2.0";
 const SUBJECTS   = ["Mathematik","Deutsch","Englisch","Biologie","Geschichte","Physik","Chemie","Latein"];
 const SUBJ_COLOR = { Mathematik:"math",Deutsch:"german",Englisch:"english",Biologie:"bio",Geschichte:"history",Physik:"physics",Chemie:"chem",Latein:"latin" };
 const MONTHS_DE  = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
