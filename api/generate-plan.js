@@ -24,7 +24,7 @@ export default async function handler(req, res) {
   const subjectInfo = subjects.map(s => {
     const examDate = s.examDate || null;
     const validDays = examDate ? weekdays.filter(d => d < examDate) : weekdays;
-    return { name: s.name, examDate, validDays, topics: s.topics || [] };
+    return { name: s.name, examDate, validDays, topics: s.topics || [], importance: s.importance || 3 };
   });
 
   const daySubjects = {};
@@ -40,7 +40,8 @@ export default async function handler(req, res) {
     const topicList = (s.topics && s.topics.length > 0)
       ? `Prüfungsthemen: ${s.topics.join(", ")}`
       : "Prüfungsthemen: nicht angegeben (allgemeine Themen verwenden)";
-    return `${s.name}: Prüfung ${s.examDate || "kein Datum"}, lernbar bis: ${s.validDays.slice(-1)[0] || "—"}, ${topicList}`;
+    const importanceLabel = ["","sehr unwichtig","weniger wichtig","normal wichtig","sehr wichtig","höchste Priorität"][s.importance] || "normal wichtig";
+    return `${s.name}: Prüfung ${s.examDate || "kein Datum"}, lernbar bis: ${s.validDays.slice(-1)[0] || "—"}, Wichtigkeit: ${s.importance}/5 (${importanceLabel}), ${topicList}`;
   }).join("\n");
 
   const dayMapStr = activeDays.map(d =>
@@ -75,12 +76,13 @@ STRIKTE REGELN:
 1. Die Summe aller "durationMinutes" eines Tages MUSS exakt ${totalMinutes} ergeben.
 2. Entscheide wie viele Einheiten sinnvoll sind. Typisch: 30, 45, 60, 90 min.
 3. Verwende NUR die aufgelisteten Fächer für den jeweiligen Tag.
-4. WICHTIG: Wenn Prüfungsthemen angegeben sind, erstelle SEHR SPEZIFISCHE Lerneinheiten daraus.
+4. WICHTIGKEIT: Fächer mit höherer Wichtigkeit (4-5 Sterne) sollen deutlich mehr Gesamtlernzeit bekommen als Fächer mit niedriger Wichtigkeit (1-2 Sterne). Wichtigkeit 5 = ca. doppelt so viel Zeit wie Wichtigkeit 1. Wichtigkeit 3 = normale Zeit.
+5. WICHTIG: Wenn Prüfungsthemen angegeben sind, erstelle SEHR SPEZIFISCHE Lerneinheiten daraus.
    Beispiel: Themen "Vektoren, Stochastik" → nicht "Mathematik lernen" sondern konkret:
    "Vektoren: Skalarprodukt und Winkelberechnung", "Stochastik: Binomialverteilung Aufgaben", usw.
-5. Ohne Themen: allgemeine, fachspezifische Lerneinheiten erstellen.
-6. Fächer mit näherem Prüfungstermin häufiger einplanen.
-7. Fächer mit gleichem Prüfungstag sollen über den gesamten Plan ungefähr gleich viel Gesamtlernzeit bekommen.
+6. Ohne Themen: allgemeine, fachspezifische Lerneinheiten erstellen.
+7. Fächer mit näherem Prüfungstermin häufiger einplanen.
+8. Fächer mit gleichem Prüfungstag: Lernzeit proportional zur Wichtigkeit verteilen.
 
 Antworte NUR mit JSON (kein Markdown, keine Backticks):
 {
@@ -172,3 +174,4 @@ WICHTIG: durationMinutes ist ein Integer. Summe pro Tag = exakt ${totalMinutes}.
     return res.status(500).json({ error: "Failed to generate plan" });
   }
 }
+
