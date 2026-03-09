@@ -70,6 +70,14 @@ const css = `
   .topics-section { display:flex; flex-direction:column; gap:.6rem; margin-top:.2rem; }
   .topic-subj-block { background:var(--cream); border:1px solid var(--border); border-radius:10px; padding:.7rem .9rem; overflow:visible; }
   .topic-subj-name { font-size:.8rem; font-weight:600; color:var(--ink); margin-bottom:.45rem; }
+
+  /* Importance stars */
+  .importance-row { display:flex; align-items:center; gap:.5rem; margin-top:.55rem; padding-top:.55rem; border-top:1px solid var(--border); }
+  .importance-lbl { font-size:.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; flex-shrink:0; }
+  .stars { display:flex; gap:3px; }
+  .star { font-size:1rem; cursor:pointer; color:var(--border); transition:color .1s; line-height:1; -webkit-tap-highlight-color:transparent; }
+  .star.on { color:#e8a020; }
+  .importance-hint { font-size:.67rem; color:var(--muted); margin-left:.3rem; }
   .topic-chip-wrap { display:flex; flex-wrap:wrap; gap:.35rem; align-items:center; }
   .topic-chip { padding:.22rem .65rem; border-radius:20px; border:1.5px solid var(--accent);
     font-size:.72rem; font-weight:500; background:rgba(200,64,26,.07); color:var(--accent);
@@ -234,7 +242,7 @@ const css = `
   @keyframes pulse   { 0%,100%{opacity:.5} 50%{opacity:1} }
 `;
 
-const VERSION    = "v2.0";
+const VERSION    = "v2.1";
 const SUBJECTS   = ["Mathematik","Deutsch","Englisch","Biologie","Geschichte","Physik","Chemie","Latein"];
 const SUBJ_COLOR = { Mathematik:"math",Deutsch:"german",Englisch:"english",Biologie:"bio",Geschichte:"history",Physik:"physics",Chemie:"chem",Latein:"latin" };
 const MONTHS_DE  = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
@@ -488,9 +496,10 @@ export default function App() {
   const [error,    setError]    = useState("");
   const [showCustom, setShowCustom] = useState(false);
   const [customVal,  setCustomVal]  = useState("");
-  const [topics,     setTopics]     = useState({}); // { subjectName: [topic1, topic2, ...] }
-  const [topicInput, setTopicInput] = useState({}); // { subjectName: "" } current input value
-  const [showTopicInput, setShowTopicInput] = useState({}); // { subjectName: bool }
+  const [topics,     setTopics]     = useState({});
+  const [topicInput, setTopicInput] = useState({});
+  const [showTopicInput, setShowTopicInput] = useState({});
+  const [importance, setImportance] = useState({}); // { subjectName: 1-5 }, default 3
   const customRef = useRef(null);
   const timerRef  = useRef(null);
   const todayStr  = localStr(new Date());
@@ -528,7 +537,7 @@ export default function App() {
     let i = 0;
     timerRef.current = setInterval(()=>setLoadMsg(LOAD_MSGS[i++%LOAD_MSGS.length]), 1400);
     try {
-      const subjects = selected.map(s=>({name:s, examDate:dates[s]||"", topics:topics[s]||[]}));
+      const subjects = selected.map(s=>({name:s, examDate:dates[s]||"", topics:topics[s]||[], importance:importance[s]||3}));
       const res = await fetch("/api/generate-plan",{
         method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({studentData:{name,hoursPerDay:hours,subjects}})
@@ -657,6 +666,19 @@ export default function App() {
                         <button className="topic-inp-cancel" onClick={()=>setShowTopicInput(p=>({...p,[s]:false}))}>✕</button>
                       </div>
                     )}
+                    {/* Importance stars */}
+                    <div className="importance-row">
+                      <div className="importance-lbl">Wichtigkeit</div>
+                      <div className="stars">
+                        {[1,2,3,4,5].map(n=>(
+                          <span key={n} className={`star ${(importance[s]||3)>=n?"on":""}`}
+                            onClick={()=>setImportance(p=>({...p,[s]:n}))}>★</span>
+                        ))}
+                      </div>
+                      <div className="importance-hint">
+                        {(importance[s]||3)===1?"wenig Zeit":(importance[s]||3)===2?"etwas weniger":(importance[s]||3)===3?"normal":(importance[s]||3)===4?"mehr Zeit":"maximale Zeit"}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
