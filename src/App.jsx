@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { supabase } from "./supabase.js";
 
 const GOOGLE_FONTS = `@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap');`;
 
@@ -233,6 +234,37 @@ const css = `
   .dot-chem{background:#c8641e} .dot-latin{background:#6450a0} .dot-custom{background:#666}
 
   .err { background:rgba(200,64,26,.08); border:1px solid rgba(200,64,26,.25); border-radius:10px; padding:.75rem 1rem; font-size:.82rem; color:var(--accent); margin-bottom:1rem; }
+  .success { background:rgba(42,92,69,.08); border:1px solid rgba(42,92,69,.25); border-radius:10px; padding:.75rem 1rem; font-size:.82rem; color:var(--accent2); margin-bottom:1rem; }
+
+  /* Auth screen */
+  .auth-wrap { width:100%; max-width:400px; margin:0 auto; padding:3rem 1.25rem 4rem; animation:fadeUp .4s ease both; }
+  .auth-toggle { display:flex; gap:.5rem; margin-bottom:1.5rem; }
+  .auth-tab { flex:1; padding:.55rem; border-radius:9px; border:1.5px solid var(--border);
+    background:var(--cream); font-family:'DM Sans',sans-serif; font-size:.85rem; font-weight:500;
+    cursor:pointer; color:var(--muted); transition:all .15s; }
+  .auth-tab.on { border-color:var(--accent); background:rgba(200,64,26,.07); color:var(--accent); }
+  .auth-forgot { font-size:.75rem; color:var(--muted); text-align:right; cursor:pointer; text-decoration:underline; margin-top:-.2rem; }
+  .auth-forgot:hover { color:var(--accent); }
+
+  /* Nav auth buttons */
+  .nav-auth { display:flex; align-items:center; gap:.5rem; margin-left:auto; }
+  .nav-email { font-size:.72rem; color:var(--muted); max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .btn-ghost { background:transparent; border:1.5px solid var(--border); border-radius:8px;
+    padding:.35rem .75rem; font-family:'DM Sans',sans-serif; font-size:.75rem; font-weight:500;
+    cursor:pointer; color:var(--muted); transition:all .15s; }
+  .btn-ghost:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-new-plan { background:var(--accent); border:none; border-radius:8px;
+    padding:.35rem .75rem; font-family:'DM Sans',sans-serif; font-size:.75rem; font-weight:500;
+    cursor:pointer; color:#fff; transition:all .15s; }
+  .btn-new-plan:hover { background:#a8330f; }
+
+  /* Progress checkboxes in day modal */
+  .modal-entry-check { display:flex; align-items:center; gap:.6rem; cursor:pointer; margin-top:.4rem; }
+  .check-box { width:18px; height:18px; border-radius:5px; border:1.5px solid var(--border);
+    flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+  .check-box.done { background:var(--accent2); border-color:var(--accent2); }
+  .check-lbl { font-size:.75rem; color:var(--muted); }
+  .check-lbl.done { color:var(--accent2); text-decoration:line-through; }
 
   @keyframes fadeUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
   @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
@@ -241,7 +273,7 @@ const css = `
   @keyframes pulse   { 0%,100%{opacity:.5} 50%{opacity:1} }
 `;
 
-const VERSION    = "v2.4";
+const VERSION    = "v3.0";
 const SUBJECTS   = ["Mathematik","Deutsch","Englisch","Biologie","Geschichte","Physik","Chemie","Latein"];
 const SUBJ_COLOR = { Mathematik:"math",Deutsch:"german",Englisch:"english",Biologie:"bio",Geschichte:"history",Physik:"physics",Chemie:"chem",Latein:"latin" };
 const MONTHS_DE  = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
@@ -367,7 +399,7 @@ function DatePicker({ value, onChange }) {
 }
 
 // ── Day Modal ──────────────────────────────────────────────
-function DayModal({ dateStr, entries, examName, onClose }) {
+function DayModal({ dateStr, entries, examName, onClose, completed, onToggle, user }) {
   useEffect(() => {
     document.body.classList.add("modal-open");
     document.documentElement.classList.add("modal-open");
@@ -381,6 +413,7 @@ function DayModal({ dateStr, entries, examName, onClose }) {
   }, [onClose]);
 
   const totalMin = entries.reduce((a,e)=>a+(e.durationMinutes||0),0);
+  const entryKey = (e) => `${e.date}|${e.subject}|${e.topic}`;
 
   return createPortal(
     <div className="modal-overlay" onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
@@ -398,16 +431,28 @@ function DayModal({ dateStr, entries, examName, onClose }) {
         {entries.length > 0 && (
           <>
             <div className="modal-entries">
-              {entries.map((e,i) => (
-                <div key={i} className="modal-entry">
-                  <div className="modal-entry-subj">
-                    <div className={`subj-dot dot-${subjColor(e.subject)}`}/>
-                    {e.subject}
+              {entries.map((e,i) => {
+                const key = entryKey(e);
+                const done = completed?.has(key);
+                return (
+                  <div key={i} className="modal-entry" style={done?{opacity:.6}:{}}>
+                    <div className="modal-entry-subj">
+                      <div className={`subj-dot dot-${subjColor(e.subject)}`}/>
+                      {e.subject}
+                    </div>
+                    <div className="modal-entry-topic">{e.topic}</div>
+                    {e.durationMinutes && <div className="modal-entry-dur">⏱ {fmtMin(e.durationMinutes)}</div>}
+                    {user && (
+                      <div className="modal-entry-check" onClick={()=>onToggle(e)}>
+                        <div className={`check-box ${done?"done":""}`}>
+                          {done && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/></svg>}
+                        </div>
+                        <span className={`check-lbl ${done?"done":""}`}>{done?"Erledigt":"Als erledigt markieren"}</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="modal-entry-topic">{e.topic}</div>
-                  {e.durationMinutes && <div className="modal-entry-dur">⏱ {fmtMin(e.durationMinutes)}</div>}
-                </div>
-              ))}
+                );
+              })}
             </div>
             {totalMin > 0 && <div className="modal-total">Gesamt: {fmtMin(totalMin)}</div>}
           </>
@@ -423,7 +468,7 @@ function DayModal({ dateStr, entries, examName, onClose }) {
 }
 
 // ── CalendarView ───────────────────────────────────────────
-function CalendarView({ dailyPlan, subjects }) {
+function CalendarView({ dailyPlan, subjects, completed, onToggle, user }) {
   const [modal, setModal] = useState(null);
   const today    = new Date();
   const todayStr = localStr(today);
@@ -505,20 +550,98 @@ function CalendarView({ dailyPlan, subjects }) {
           entries={modal.entries}
           examName={modal.examName}
           onClose={()=>setModal(null)}
+          completed={completed}
+          onToggle={onToggle}
+          user={user}
         />
       )}
     </>
   );
 }
 
+// ── Auth Screen ────────────────────────────────────────────
+function AuthScreen({ onAuth }) {
+  const [tab,      setTab]      = useState("login"); // login | register
+  const [email,    setEmail]    = useState("");
+  const [password, setPassword] = useState("");
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState("");
+  const [success,  setSuccess]  = useState("");
+
+  async function handleSubmit() {
+    setError(""); setSuccess(""); setLoading(true);
+    if (tab === "login") {
+      const { error: e } = await supabase.auth.signInWithPassword({ email, password });
+      if (e) setError(e.message);
+    } else {
+      const { error: e } = await supabase.auth.signUp({ email, password });
+      if (e) setError(e.message);
+      else setSuccess("Bestätigungs-Email gesendet! Bitte prüfe dein Postfach.");
+    }
+    setLoading(false);
+  }
+
+  async function handleForgot() {
+    if (!email) { setError("Bitte Email eingeben."); return; }
+    setLoading(true);
+    const { error: e } = await supabase.auth.resetPasswordForEmail(email);
+    if (e) setError(e.message);
+    else setSuccess("Passwort-Reset Email gesendet!");
+    setLoading(false);
+  }
+
+  return (
+    <div className="app">
+      <style>{GOOGLE_FONTS}{css}</style>
+      <div className="auth-wrap">
+        <div className="eyebrow">Lernplan</div>
+        <div className="version-pill">{VERSION}</div>
+        <h1 className="hero-title">Dein <em>smarter</em> Lernplan</h1>
+        <p className="hero-sub">Melde dich an um deinen Lernplan zu speichern und deinen Fortschritt zu tracken.</p>
+        <p style={{fontSize:".72rem",color:"var(--muted)",marginBottom:"1.5rem"}}>by <em style={{fontStyle:"italic",color:"var(--accent)"}}>Eduardo</em></p>
+
+        <div className="form-card">
+          <div className="auth-toggle">
+            <button className={`auth-tab ${tab==="login"?"on":""}`} onClick={()=>{setTab("login");setError("");setSuccess("");}}>Anmelden</button>
+            <button className={`auth-tab ${tab==="register"?"on":""}`} onClick={()=>{setTab("register");setError("");setSuccess("");}}>Registrieren</button>
+          </div>
+          {error   && <div className="err">⚠ {error}</div>}
+          {success && <div className="success">✓ {success}</div>}
+          <div className="field">
+            <div className="field-label">Email</div>
+            <input className="inp" type="email" placeholder="deine@email.de" value={email}
+              onChange={e=>setEmail(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
+          </div>
+          <div className="field">
+            <div className="field-label">Passwort</div>
+            <input className="inp" type="password" placeholder="••••••••" value={password}
+              onChange={e=>setPassword(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
+          </div>
+          {tab==="login" && (
+            <div className="auth-forgot" onClick={handleForgot}>Passwort vergessen?</div>
+          )}
+          <button className="btn-main" onClick={handleSubmit} disabled={loading||!email||!password}>
+            {loading ? "…" : tab==="login" ? "Anmelden" : "Account erstellen"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── App ────────────────────────────────────────────────────
 export default function App() {
+  const [user,     setUser]     = useState(null);
+  const [authReady,setAuthReady]= useState(false);
   const [screen,   setScreen]   = useState("onboard");
   const [name,     setName]     = useState("");
   const [hours,    setHours]    = useState("2");
   const [selected, setSelected] = useState([]);
   const [dates,    setDates]    = useState({});
   const [plan,     setPlan]     = useState(null);
+  const [planId,   setPlanId]   = useState(null);
   const [loadMsg,  setLoadMsg]  = useState("");
   const [error,    setError]    = useState("");
   const [showCustom, setShowCustom] = useState(false);
@@ -526,10 +649,81 @@ export default function App() {
   const [topics,     setTopics]     = useState({});
   const [topicInput, setTopicInput] = useState({});
   const [showTopicInput, setShowTopicInput] = useState({});
-  const [importance, setImportance] = useState({}); // { subjectName: 1-5 }, default 3
+  const [importance, setImportance] = useState({});
+  const [completed,  setCompleted]  = useState(new Set()); // Set of "date|subject|topic"
   const customRef = useRef(null);
   const timerRef  = useRef(null);
   const todayStr  = localStr(new Date());
+
+  // ── Auth listener ─────────────────────────────────────────
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setAuthReady(true);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // ── Load saved plan on login ──────────────────────────────
+  useEffect(() => {
+    if (!user) return;
+    loadSavedPlan();
+  }, [user]);
+
+  async function loadSavedPlan() {
+    const { data } = await supabase
+      .from("plans")
+      .select("id, data")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    if (data) {
+      setPlanId(data.id);
+      const p = data.data;
+      setPlan(p);
+      setName(p.name || "");
+      setScreen("dashboard");
+      loadProgress(data.id);
+    }
+  }
+
+  async function loadProgress(pid) {
+    const { data } = await supabase
+      .from("progress")
+      .select("entry_date, subject, topic")
+      .eq("plan_id", pid);
+    if (data) {
+      setCompleted(new Set(data.map(r => `${r.entry_date}|${r.subject}|${r.topic}`)));
+    }
+  }
+
+  async function toggleProgress(entry) {
+    if (!user || !planId) return;
+    const key = `${entry.date}|${entry.subject}|${entry.topic}`;
+    const done = completed.has(key);
+    if (done) {
+      await supabase.from("progress").delete()
+        .eq("user_id", user.id).eq("plan_id", planId)
+        .eq("entry_date", entry.date).eq("subject", entry.subject).eq("topic", entry.topic);
+      setCompleted(p => { const n = new Set(p); n.delete(key); return n; });
+    } else {
+      await supabase.from("progress").upsert({
+        user_id: user.id, plan_id: planId,
+        entry_date: entry.date, subject: entry.subject, topic: entry.topic
+      });
+      setCompleted(p => new Set([...p, key]));
+    }
+  }
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    setPlan(null); setPlanId(null); setCompleted(new Set());
+    setScreen("onboard"); setName(""); setSelected([]); setDates({});
+  }
 
   function toggleSubj(s) {
     setSelected(p => p.includes(s) ? p.filter(x=>x!==s) : [...p,s]);
@@ -572,7 +766,21 @@ export default function App() {
       clearInterval(timerRef.current);
       if (!res.ok) throw new Error();
       const data = await res.json();
-      setPlan({...data, subjects});
+      const planData = {...data, subjects, name};
+
+      // Save to Supabase if logged in
+      if (user) {
+        // Delete old plan first
+        await supabase.from("plans").delete().eq("user_id", user.id);
+        await supabase.from("progress").delete().eq("user_id", user.id);
+        const { data: saved } = await supabase.from("plans")
+          .insert({ user_id: user.id, data: planData })
+          .select("id").single();
+        setPlanId(saved?.id || null);
+        setCompleted(new Set());
+      }
+
+      setPlan(planData);
       setScreen("dashboard");
     } catch {
       clearInterval(timerRef.current);
@@ -581,21 +789,29 @@ export default function App() {
     }
   }
 
-  // ── "Nächste Sessions" Logik ──────────────────────────────
-  // Find the next TWO distinct learning days from today onwards
   const nextSessions = (() => {
     if (!plan?.dailyPlan) return [];
     const futureDates = [...new Set(
-      plan.dailyPlan
-        .filter(e => e.date >= todayStr)
-        .map(e => e.date)
+      plan.dailyPlan.filter(e => e.date >= todayStr).map(e => e.date)
     )].sort().slice(0, 2);
-
     return futureDates.map(date => ({
-      date,
-      entries: plan.dailyPlan.filter(e => e.date === date)
+      date, entries: plan.dailyPlan.filter(e => e.date === date)
     }));
   })();
+
+  const completedCount = completed.size;
+  const totalSessions  = plan?.dailyPlan?.length || 0;
+
+  // ── Wait for auth ─────────────────────────────────────────
+  if (!authReady) return (
+    <div className="app">
+      <style>{GOOGLE_FONTS}{css}</style>
+      <div className="loading"><div className="spinner"/></div>
+    </div>
+  );
+
+  // ── Not logged in → show auth ─────────────────────────────
+  if (!user) return <AuthScreen onAuth={()=>{}} />;
 
   if (screen==="loading") return (
     <div className="app">
@@ -611,9 +827,15 @@ export default function App() {
   if (screen==="onboard") return (
     <div className="app">
       <style>{GOOGLE_FONTS}{css}</style>
+      <nav className="nav">
+        <div className="nav-logo">Lern<span>.</span>Plan <span className="nav-version">{VERSION}</span></div>
+        <div className="nav-auth">
+          <span className="nav-email">{user.email}</span>
+          <button className="btn-ghost" onClick={signOut}>Abmelden</button>
+        </div>
+      </nav>
       <div className="onboard">
         <div className="eyebrow">Lernplan</div>
-        <div className="version-pill">{VERSION}</div>
         <h1 className="hero-title">Dein <em>smarter</em> Lernplan — von KI erstellt</h1>
         <p className="hero-sub">Gib deine Fächer und Prüfungstermine ein. Die KI erstellt in Sekunden einen personalisierten Lernplan.</p>
         <p style={{fontSize:".72rem",color:"var(--muted)",marginTop:"-.5rem",marginBottom:"1.5rem"}}>by <em style={{fontStyle:"italic",color:"var(--accent)"}}>Eduardo</em></p>
@@ -662,12 +884,10 @@ export default function App() {
               <div className="topics-section">
                 {selected.map(s=>(
                   <div key={s} className="topic-subj-block">
-                    {/* Subject name + date picker row */}
                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:".5rem"}}>
                       <div className="topic-subj-name">{s}</div>
                       <DatePicker value={dates[s]||""} onChange={d=>setDates(p=>({...p,[s]:d}))}/>
                     </div>
-                    {/* Topics chips */}
                     <div className="topic-chip-wrap">
                       {(topics[s]||[]).map((t,i)=>(
                         <span key={i} className="topic-chip" onClick={()=>removeTopic(s,i)}>{t} ×</span>
@@ -678,22 +898,14 @@ export default function App() {
                     </div>
                     {showTopicInput[s] && (
                       <div className="topic-inp-row">
-                        <input
-                          autoFocus
-                          className="topic-inp"
-                          placeholder="Thema eingeben…"
+                        <input autoFocus className="topic-inp" placeholder="Thema eingeben…"
                           value={topicInput[s]||""}
                           onChange={e=>setTopicInput(p=>({...p,[s]:e.target.value}))}
-                          onKeyDown={e=>{
-                            if(e.key==="Enter") addTopic(s);
-                            if(e.key==="Escape") setShowTopicInput(p=>({...p,[s]:false}));
-                          }}
-                        />
+                          onKeyDown={e=>{ if(e.key==="Enter") addTopic(s); if(e.key==="Escape") setShowTopicInput(p=>({...p,[s]:false})); }}/>
                         <button className="topic-inp-ok" onClick={()=>addTopic(s)}>+</button>
                         <button className="topic-inp-cancel" onClick={()=>setShowTopicInput(p=>({...p,[s]:false}))}>✕</button>
                       </div>
                     )}
-                    {/* Importance stars */}
                     <div className="importance-row">
                       <div className="importance-lbl">Wichtigkeit</div>
                       <div className="stars">
@@ -725,7 +937,11 @@ export default function App() {
       <style>{GOOGLE_FONTS}{css}</style>
       <nav className="nav">
         <div className="nav-logo">Lern<span>.</span>Plan <span className="nav-version">{VERSION}</span></div>
-        <div className="nav-by">by <em>Eduardo</em></div>
+        <div className="nav-auth">
+          <span className="nav-email">{user.email}</span>
+          <button className="btn-new-plan" onClick={()=>{ setScreen("onboard"); setSelected([]); setDates({}); setTopics({}); setImportance({}); }}>Neuer Plan</button>
+          <button className="btn-ghost" onClick={signOut}>Abmelden</button>
+        </div>
       </nav>
       <div className="dash">
         <div className="dash-hi">Hallo, {name} 👋</div>
@@ -737,8 +953,8 @@ export default function App() {
             <div className="stat-val">{plan.subjects?.length}<span className="stat-unit"> aktiv</span></div>
           </div>
           <div className="stat">
-            <div className="stat-lbl">Lerntage</div>
-            <div className="stat-val">{[...new Set(plan.dailyPlan?.map(e=>e.date)||[])].length}<span className="stat-unit"> Tage</span></div>
+            <div className="stat-lbl">Fortschritt</div>
+            <div className="stat-val">{completedCount}<span className="stat-unit"> / {totalSessions}</span></div>
           </div>
           <div className="stat">
             <div className="stat-lbl">Nächste Prüfung</div>
@@ -761,7 +977,7 @@ export default function App() {
             {nextSessions.map((day, di) => (
               <div key={di}>
                 <div className="today-date">
-                  {day.date === todayStr ? "Heute" : day.date === (() => { const t=new Date(); t.setDate(t.getDate()+1); return localStr(t); })() ? "Morgen" : fmtDate(day.date)} — {fmtDate(day.date)}
+                  {day.date === todayStr ? "Heute" : day.date === (()=>{ const t=new Date(); t.setDate(t.getDate()+1); return localStr(t); })() ? "Morgen" : ""} — {fmtDate(day.date)}
                 </div>
                 <div className="today-entries">
                   {day.entries.map((e,i)=>(
@@ -802,7 +1018,13 @@ export default function App() {
         </div>
 
         <div className="sec-title">28-Tage Lernkalender</div>
-        <CalendarView dailyPlan={plan.dailyPlan||[]} subjects={plan.subjects||[]}/>
+        <CalendarView
+          dailyPlan={plan.dailyPlan||[]}
+          subjects={plan.subjects||[]}
+          completed={completed}
+          onToggle={toggleProgress}
+          user={user}
+        />
       </div>
     </div>
   );
