@@ -76,7 +76,7 @@ STRIKTE REGELN:
 1. Die Summe aller "durationMinutes" eines Tages MUSS exakt ${totalMinutes} ergeben.
 2. Entscheide wie viele Einheiten sinnvoll sind. Typisch: 30, 45, 60, 90 min.
 3. Verwende NUR die aufgelisteten Fächer für den jeweiligen Tag.
-4. WICHTIGKEIT: Fächer mit höherer Wichtigkeit (4-5 Sterne) sollen deutlich mehr Gesamtlernzeit bekommen als Fächer mit niedriger Wichtigkeit (1-2 Sterne). Wichtigkeit 5 = ca. doppelt so viel Zeit wie Wichtigkeit 1. Wichtigkeit 3 = normale Zeit.
+4. WICHTIGKEIT beeinflusst NUR wie oft/wie viel Zeit ein Fach bekommt — NICHT die Qualität der Themen. Auch ein Fach mit Wichtigkeit 1 bekommt konkrete, spezifische Themen, nur einfach seltener eingeplant. Wichtigkeit 5 = ca. doppelt so viele Einheiten wie Wichtigkeit 1.
 5. WICHTIG: Wenn Prüfungsthemen angegeben sind, erstelle SEHR SPEZIFISCHE Lerneinheiten daraus.
    Beispiel: Themen "Vektoren, Stochastik" → nicht "Mathematik lernen" sondern konkret:
    "Vektoren: Skalarprodukt und Winkelberechnung", "Stochastik: Binomialverteilung Aufgaben", usw.
