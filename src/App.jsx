@@ -305,7 +305,7 @@ const css = `
   @keyframes pulse   { 0%,100%{opacity:.5} 50%{opacity:1} }
 `;
 
-const VERSION    = "v3.2";
+const VERSION    = "v3.3";
 const SUBJECTS   = ["Mathematik","Deutsch","Englisch","Biologie","Geschichte","Physik","Chemie","Latein"];
 const SUBJ_COLOR = { Mathematik:"math",Deutsch:"german",Englisch:"english",Biologie:"bio",Geschichte:"history",Physik:"physics",Chemie:"chem",Latein:"latin" };
 const MONTHS_DE  = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
@@ -512,7 +512,12 @@ function CalendarView({ dailyPlan, subjects, completed, onToggle, user }) {
   });
 
   const examByDate = {};
-  (subjects||[]).forEach(s => { if (s.examDate) examByDate[s.examDate] = s.name; });
+  (subjects||[]).forEach(s => {
+    if (s.examDate) {
+      if (!examByDate[s.examDate]) examByDate[s.examDate] = [];
+      examByDate[s.examDate].push(s.name);
+    }
+  });
 
   const monday = new Date(today);
   const dow = today.getDay();
@@ -529,7 +534,8 @@ function CalendarView({ dailyPlan, subjects, completed, onToggle, user }) {
   function openDay(date) {
     const ds = localStr(date);
     const entries = byDate[ds] || [];
-    const examName = examByDate[ds] || null;
+    const exams = examByDate[ds] || null; // array or null
+    const examName = exams ? exams.join(", ") : null;
     if (entries.length > 0 || examName) setModal({ dateStr:ds, entries, examName });
   }
 
@@ -548,23 +554,25 @@ function CalendarView({ dailyPlan, subjects, completed, onToggle, user }) {
                 {week.map((date,di)=>{
                   const ds      = localStr(date);
                   const entries = byDate[ds] || [];
-                  const exam    = examByDate[ds];
+                  const exams   = examByDate[ds]; // array or undefined
                   const isToday = ds === todayStr;
                   const isWknd  = di >= 5;
-                  const hasData = entries.length > 0 || exam;
+                  const hasData = entries.length > 0 || exams;
                   return (
                     <div key={di}
-                      className={`cal-cell ${isToday?"cal-today":""} ${exam?"cal-exam":""} ${isWknd&&!isToday&&!exam?"cal-wknd":""} ${hasData?"cal-has-entries":""}`}
+                      className={`cal-cell ${isToday?"cal-today":""} ${exams?"cal-exam":""} ${isWknd&&!isToday&&!exams?"cal-wknd":""} ${hasData?"cal-has-entries":""}`}
                       onClick={()=>!isWknd && openDay(date)}
                     >
                       <div className={`cal-num ${isToday?"is-today":""}`}>{date.getDate()}</div>
-                      {exam && <span className="cal-tag t-exam">🎯 {exam.substring(0,7)}</span>}
-                      {!exam && entries.slice(0,2).map((e,i)=>(
+                      {exams && exams.map((ex,i)=>(
+                        <span key={i} className="cal-tag t-exam">🎯 {ex.substring(0,7)}</span>
+                      ))}
+                      {!exams && entries.slice(0,2).map((e,i)=>(
                         <span key={i} className={`cal-tag t-${subjColor(e.subject)}`}>
                           {e.topic?.length>12 ? e.topic.substring(0,11)+"…" : e.topic}
                         </span>
                       ))}
-                      {!exam && entries.length > 2 && (
+                      {!exams && entries.length > 2 && (
                         <div className="cal-more">+{entries.length-2} mehr</div>
                       )}
                     </div>
