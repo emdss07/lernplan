@@ -236,7 +236,14 @@ const css = `
   .err { background:rgba(200,64,26,.08); border:1px solid rgba(200,64,26,.25); border-radius:10px; padding:.75rem 1rem; font-size:.82rem; color:var(--accent); margin-bottom:1rem; }
   .success { background:rgba(42,92,69,.08); border:1px solid rgba(42,92,69,.25); border-radius:10px; padding:.75rem 1rem; font-size:.82rem; color:var(--accent2); margin-bottom:1rem; }
 
-  /* Auth screen */
+  /* Confirmed screen */
+  .confirmed-wrap { width:100%; max-width:400px; margin:0 auto; padding:4rem 1.25rem; text-align:center; animation:fadeUp .5s ease both; }
+  .confirmed-icon { font-size:3.5rem; margin-bottom:1.2rem; }
+  .confirmed-title { font-family:'Fraunces',serif; font-size:1.8rem; font-weight:600; margin-bottom:.6rem; }
+  .confirmed-sub { color:var(--muted); font-size:.93rem; line-height:1.65; margin-bottom:2rem; }
+  .confirmed-bar { height:3px; background:var(--warm); border-radius:3px; overflow:hidden; margin-bottom:1.5rem; }
+  .confirmed-bar-fill { height:100%; background:var(--accent2); border-radius:3px; animation:fillBar 3s linear forwards; }
+  @keyframes fillBar { from{width:0%} to{width:100%} }
   .auth-wrap { width:100%; max-width:400px; margin:0 auto; padding:3rem 1.25rem 4rem; animation:fadeUp .4s ease both; }
   .auth-toggle { display:flex; gap:.5rem; margin-bottom:1.5rem; }
   .auth-tab { flex:1; padding:.55rem; border-radius:9px; border:1.5px solid var(--border);
@@ -266,14 +273,18 @@ const css = `
   .check-lbl { font-size:.75rem; color:var(--muted); }
   .check-lbl.done { color:var(--accent2); text-decoration:line-through; }
 
-  @keyframes fadeUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+  /* Email confirmed screen */
+  .confirmed-wrap { width:100%; max-width:400px; margin:0 auto; padding:5rem 1.25rem; text-align:center; animation:fadeUp .5s ease both; }
+  .confirmed-icon { font-size:3rem; margin-bottom:1rem; }
+  .confirmed-title { font-family:'Fraunces',serif; font-size:1.6rem; font-weight:600; margin-bottom:.6rem; }
+  .confirmed-sub { color:var(--muted); font-size:.9rem; line-height:1.6; margin-bottom:1.8rem; }
   @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
   @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
   @keyframes spin    { to{transform:rotate(360deg)} }
   @keyframes pulse   { 0%,100%{opacity:.5} 50%{opacity:1} }
 `;
 
-const VERSION    = "v3.0";
+const VERSION    = "v3.1";
 const SUBJECTS   = ["Mathematik","Deutsch","Englisch","Biologie","Geschichte","Physik","Chemie","Latein"];
 const SUBJ_COLOR = { Mathematik:"math",Deutsch:"german",Englisch:"english",Biologie:"bio",Geschichte:"history",Physik:"physics",Chemie:"chem",Latein:"latin" };
 const MONTHS_DE  = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
@@ -635,6 +646,7 @@ function AuthScreen({ onAuth }) {
 export default function App() {
   const [user,     setUser]     = useState(null);
   const [authReady,setAuthReady]= useState(false);
+  const [emailConfirmed, setEmailConfirmed] = useState(false);
   const [screen,   setScreen]   = useState("onboard");
   const [name,     setName]     = useState("");
   const [hours,    setHours]    = useState("2");
@@ -657,12 +669,28 @@ export default function App() {
 
   // ── Auth listener ─────────────────────────────────────────
   useEffect(() => {
+    // Check if this is an email confirmation redirect
+    const hash = window.location.hash;
+    const params = new URLSearchParams(window.location.search);
+    if (hash.includes("type=signup") || params.get("type") === "signup" ||
+        hash.includes("access_token") && hash.includes("type=signup")) {
+      setEmailConfirmed(true);
+      // Clean URL
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setAuthReady(true);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
+      if (event === "SIGNED_IN" && session?.user?.email_confirmed_at) {
+        // Check if this is a fresh confirmation (not just a login)
+        const confirmedRecently = session.user.email_confirmed_at &&
+          (Date.now() - new Date(session.user.email_confirmed_at).getTime()) < 60000;
+        if (confirmedRecently) setEmailConfirmed(true);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -802,11 +830,32 @@ export default function App() {
   const completedCount = completed.size;
   const totalSessions  = plan?.dailyPlan?.length || 0;
 
+  // ── Auto-redirect after email confirmation ────────────────
+  useEffect(() => {
+    if (!emailConfirmed) return;
+    const t = setTimeout(() => setEmailConfirmed(false), 3000);
+    return () => clearTimeout(t);
+  }, [emailConfirmed]);
+
   // ── Wait for auth ─────────────────────────────────────────
   if (!authReady) return (
     <div className="app">
       <style>{GOOGLE_FONTS}{css}</style>
       <div className="loading"><div className="spinner"/></div>
+    </div>
+  );
+
+  // ── Email confirmed screen ────────────────────────────────
+  if (emailConfirmed) return (
+    <div className="app">
+      <style>{GOOGLE_FONTS}{css}</style>
+      <div className="confirmed-wrap">
+        <div className="confirmed-icon">🎉</div>
+        <div className="confirmed-title">Alles geklappt!</div>
+        <div className="confirmed-sub">Dein Account ist bestätigt. Du wirst gleich weitergeleitet…</div>
+        <div className="confirmed-bar"><div className="confirmed-bar-fill"/></div>
+        <button className="btn-main" onClick={()=>setEmailConfirmed(false)}>Jetzt loslegen →</button>
+      </div>
     </div>
   );
 
