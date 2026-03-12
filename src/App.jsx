@@ -244,6 +244,27 @@ const css = `
   .confirmed-bar { height:3px; background:var(--warm); border-radius:3px; overflow:hidden; margin-bottom:1.5rem; }
   .confirmed-bar-fill { height:100%; background:var(--accent2); border-radius:3px; animation:fillBar 3s linear forwards; }
   @keyframes fillBar { from{width:0%} to{width:100%} }
+
+  /* Guest banner */
+  .guest-banner { background:rgba(200,64,26,.07); border:1px solid rgba(200,64,26,.2);
+    border-radius:10px; padding:.65rem 1rem; font-size:.8rem; color:var(--accent);
+    display:flex; align-items:center; justify-content:space-between; gap:.75rem; margin-bottom:1.2rem; flex-wrap:wrap; }
+  .guest-banner-text { flex:1; line-height:1.45; }
+  .btn-accent-sm { background:var(--accent); border:none; border-radius:7px;
+    padding:.35rem .85rem; font-family:'DM Sans',sans-serif; font-size:.75rem; font-weight:500;
+    cursor:pointer; color:#fff; white-space:nowrap; transition:background .15s; flex-shrink:0; }
+  .btn-accent-sm:hover { background:#a8330f; }
+
+  /* Auth modal */
+  .auth-modal-overlay { position:fixed; inset:0; background:rgba(15,14,12,.5); z-index:9999;
+    display:flex; align-items:center; justify-content:center; padding:1rem; animation:fadeIn .2s ease; }
+  .auth-modal { background:var(--card); border-radius:18px; width:100%; max-width:380px;
+    padding:1.8rem 1.6rem 1.4rem; animation:fadeUp .2s ease; box-shadow:0 20px 60px rgba(0,0,0,.2); position:relative; }
+  .auth-modal-title { font-family:'Fraunces',serif; font-size:1.25rem; font-weight:600; margin-bottom:.3rem; }
+  .auth-modal-sub { font-size:.82rem; color:var(--muted); margin-bottom:1.2rem; line-height:1.5; }
+  .auth-modal-close { position:absolute; top:.9rem; right:1rem; background:none; border:none;
+    font-size:1.3rem; cursor:pointer; color:var(--muted); padding:.2rem .4rem; line-height:1; }
+
   .auth-wrap { width:100%; max-width:400px; margin:0 auto; padding:3rem 1.25rem 4rem; animation:fadeUp .4s ease both; }
   .auth-toggle { display:flex; gap:.5rem; margin-bottom:1.5rem; }
   .auth-tab { flex:1; padding:.55rem; border-radius:9px; border:1.5px solid var(--border);
@@ -284,7 +305,7 @@ const css = `
   @keyframes pulse   { 0%,100%{opacity:.5} 50%{opacity:1} }
 `;
 
-const VERSION    = "v3.1";
+const VERSION    = "v3.2";
 const SUBJECTS   = ["Mathematik","Deutsch","Englisch","Biologie","Geschichte","Physik","Chemie","Latein"];
 const SUBJ_COLOR = { Mathematik:"math",Deutsch:"german",Englisch:"english",Biologie:"bio",Geschichte:"history",Physik:"physics",Chemie:"chem",Latein:"latin" };
 const MONTHS_DE  = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
@@ -570,6 +591,66 @@ function CalendarView({ dailyPlan, subjects, completed, onToggle, user }) {
   );
 }
 
+// ── Auth Modal (inline, non-blocking) ─────────────────────
+function AuthModal({ onClose }) {
+  const [tab,      setTab]      = useState("login");
+  const [email,    setEmail]    = useState("");
+  const [password, setPassword] = useState("");
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState("");
+  const [success,  setSuccess]  = useState("");
+
+  useEffect(() => {
+    function onKey(e) { if (e.key==="Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    document.body.classList.add("modal-open");
+    return () => { document.removeEventListener("keydown", onKey); document.body.classList.remove("modal-open"); };
+  }, [onClose]);
+
+  async function handleSubmit() {
+    setError(""); setSuccess(""); setLoading(true);
+    if (tab === "login") {
+      const { error: e } = await supabase.auth.signInWithPassword({ email, password });
+      if (e) setError(e.message); else onClose();
+    } else {
+      const { error: e } = await supabase.auth.signUp({ email, password });
+      if (e) setError(e.message);
+      else setSuccess("Bestätigungs-Email gesendet! Bitte prüfe dein Postfach.");
+    }
+    setLoading(false);
+  }
+
+  return createPortal(
+    <div className="auth-modal-overlay" onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
+      <div className="auth-modal">
+        <button className="auth-modal-close" onClick={onClose}>×</button>
+        <div className="auth-modal-title">Konto erstellen</div>
+        <div className="auth-modal-sub">Speichere deinen Plan und tracke deinen Fortschritt.</div>
+        <div className="auth-toggle" style={{marginBottom:"1rem"}}>
+          <button className={`auth-tab ${tab==="login"?"on":""}`} onClick={()=>{setTab("login");setError("");setSuccess("");}}>Anmelden</button>
+          <button className={`auth-tab ${tab==="register"?"on":""}`} onClick={()=>{setTab("register");setError("");setSuccess("");}}>Registrieren</button>
+        </div>
+        {error   && <div className="err" style={{marginBottom:".75rem"}}>⚠ {error}</div>}
+        {success && <div className="success" style={{marginBottom:".75rem"}}>✓ {success}</div>}
+        <div className="field" style={{marginBottom:".75rem"}}>
+          <div className="field-label">Email</div>
+          <input className="inp" type="email" placeholder="deine@email.de" value={email}
+            onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
+        </div>
+        <div className="field" style={{marginBottom:"1rem"}}>
+          <div className="field-label">Passwort</div>
+          <input className="inp" type="password" placeholder="••••••••" value={password}
+            onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
+        </div>
+        <button className="btn-main" onClick={handleSubmit} disabled={loading||!email||!password}>
+          {loading ? "…" : tab==="login" ? "Anmelden" : "Account erstellen"}
+        </button>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 // ── Auth Screen ────────────────────────────────────────────
 function AuthScreen({ onAuth }) {
   const [tab,      setTab]      = useState("login"); // login | register
@@ -662,7 +743,8 @@ export default function App() {
   const [topicInput, setTopicInput] = useState({});
   const [showTopicInput, setShowTopicInput] = useState({});
   const [importance, setImportance] = useState({});
-  const [completed,  setCompleted]  = useState(new Set()); // Set of "date|subject|topic"
+  const [completed,  setCompleted]  = useState(new Set());
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const customRef = useRef(null);
   const timerRef  = useRef(null);
   const todayStr  = localStr(new Date());
@@ -698,8 +780,21 @@ export default function App() {
   // ── Load saved plan on login ──────────────────────────────
   useEffect(() => {
     if (!user) return;
-    loadSavedPlan();
+    // If guest had a plan open, save it now
+    if (plan && !planId) {
+      savePlanToSupabase(plan);
+    } else {
+      loadSavedPlan();
+    }
   }, [user]);
+
+  async function savePlanToSupabase(planData) {
+    await supabase.from("plans").delete().eq("user_id", user.id);
+    const { data: saved } = await supabase.from("plans")
+      .insert({ user_id: user.id, data: planData })
+      .select("id").single();
+    if (saved) setPlanId(saved.id);
+  }
 
   async function loadSavedPlan() {
     const { data } = await supabase
@@ -859,8 +954,8 @@ export default function App() {
     </div>
   );
 
-  // ── Not logged in → show auth ─────────────────────────────
-  if (!user) return <AuthScreen onAuth={()=>{}} />;
+  // ── Not logged in → show auth page only if directly navigating ──
+  // (guests can use the app, auth modal shown when needed)
 
   if (screen==="loading") return (
     <div className="app">
@@ -879,8 +974,12 @@ export default function App() {
       <nav className="nav">
         <div className="nav-logo">Lern<span>.</span>Plan <span className="nav-version">{VERSION}</span></div>
         <div className="nav-auth">
-          <span className="nav-email">{user.email}</span>
-          <button className="btn-ghost" onClick={signOut}>Abmelden</button>
+          {user ? (
+            <><span className="nav-email">{user.email}</span>
+            <button className="btn-ghost" onClick={signOut}>Abmelden</button></>
+          ) : (
+            <button className="btn-accent-sm" onClick={()=>setShowAuthModal(true)}>Anmelden</button>
+          )}
         </div>
       </nav>
       <div className="onboard">
@@ -978,6 +1077,7 @@ export default function App() {
           </button>
         </div>
       </div>
+      {showAuthModal && <AuthModal onClose={()=>setShowAuthModal(false)}/>}
     </div>
   );
 
@@ -987,12 +1087,23 @@ export default function App() {
       <nav className="nav">
         <div className="nav-logo">Lern<span>.</span>Plan <span className="nav-version">{VERSION}</span></div>
         <div className="nav-auth">
-          <span className="nav-email">{user.email}</span>
-          <button className="btn-new-plan" onClick={()=>{ setScreen("onboard"); setSelected([]); setDates({}); setTopics({}); setImportance({}); }}>Neuer Plan</button>
-          <button className="btn-ghost" onClick={signOut}>Abmelden</button>
+          {user ? (
+            <><span className="nav-email">{user.email}</span>
+            <button className="btn-new-plan" onClick={()=>{ setScreen("onboard"); setSelected([]); setDates({}); setTopics({}); setImportance({}); }}>Neuer Plan</button>
+            <button className="btn-ghost" onClick={signOut}>Abmelden</button></>
+          ) : (
+            <><button className="btn-new-plan" onClick={()=>{ setScreen("onboard"); setSelected([]); setDates({}); setTopics({}); setImportance({}); }}>Neuer Plan</button>
+            <button className="btn-accent-sm" onClick={()=>setShowAuthModal(true)}>Anmelden</button></>
+          )}
         </div>
       </nav>
       <div className="dash">
+        {!user && (
+          <div className="guest-banner">
+            <div className="guest-banner-text">📋 Dein Plan ist nicht gespeichert — melde dich an um ihn zu sichern und deinen Fortschritt zu tracken.</div>
+            <button className="btn-accent-sm" onClick={()=>setShowAuthModal(true)}>Jetzt anmelden</button>
+          </div>
+        )}
         <div className="dash-hi">Hallo, {name} 👋</div>
         <div className="dash-sub">{plan.planSummary?.replace(/^["']|["']$/g,"") || "Dein personalisierter Lernplan ist bereit."}</div>
 
@@ -1075,6 +1186,7 @@ export default function App() {
           user={user}
         />
       </div>
+      {showAuthModal && <AuthModal onClose={()=>setShowAuthModal(false)}/>}
     </div>
   );
 }
