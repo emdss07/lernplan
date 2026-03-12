@@ -86,7 +86,7 @@ STRIKTE REGELN:
 
 Antworte NUR mit JSON (kein Markdown, keine Backticks):
 {
-  "planSummary": "2-3 Sätze auf Deutsch",
+  "planSummary": "kurze Zusammenfassung auf Deutsch",
   "dailyPlan": [
     {"date": "YYYY-MM-DD", "subject": "Fachname", "topic": "Sehr spezifisches Thema", "durationMinutes": 60}
   ]
