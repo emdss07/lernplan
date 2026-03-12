@@ -80,7 +80,7 @@ STRIKTE REGELN:
 5. WICHTIG: Wenn Prüfungsthemen angegeben sind, erstelle SEHR SPEZIFISCHE Lerneinheiten daraus.
    Beispiel: Themen "Vektoren, Stochastik" → nicht "Mathematik lernen" sondern konkret:
    "Vektoren: Skalarprodukt und Winkelberechnung", "Stochastik: Binomialverteilung Aufgaben", usw.
-6. Ohne Themen: allgemeine, fachspezifische Lerneinheiten erstellen.
+6. Ohne angegebene Themen: Erfinde trotzdem KONKRETE, fachspezifische Lerneinheiten — NIEMALS das Wort "allgemein" verwenden! Beispiele: statt "Mathematik allgemein" → "Quadratische Funktionen: Scheitelpunktform", statt "Englisch allgemein" → "Grammar: Present Perfect vs. Simple Past Übungen", statt "Geschichte allgemein" → "Weimarer Republik: Ursachen des Scheiterns".
 7. Fächer mit näherem Prüfungstermin häufiger einplanen.
 8. Fächer mit gleichem Prüfungstag: Lernzeit proportional zur Wichtigkeit verteilen.
 
