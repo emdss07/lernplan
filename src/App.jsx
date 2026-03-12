@@ -241,7 +241,7 @@ const css = `
   @keyframes pulse   { 0%,100%{opacity:.5} 50%{opacity:1} }
 `;
 
-const VERSION    = "v2.2";
+const VERSION    = "v2.3";
 const SUBJECTS   = ["Mathematik","Deutsch","Englisch","Biologie","Geschichte","Physik","Chemie","Latein"];
 const SUBJ_COLOR = { Mathematik:"math",Deutsch:"german",Englisch:"english",Biologie:"bio",Geschichte:"history",Physik:"physics",Chemie:"chem",Latein:"latin" };
 const MONTHS_DE  = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
@@ -299,19 +299,14 @@ function DatePicker({ value, onChange }) {
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
       const popupW = 268;
-      const spaceRight = window.innerWidth - r.right - 8;
+      // Center popup under button, clamped to viewport edges
+      let left = r.left + r.width / 2 - popupW / 2;
+      if (left < 8) left = 8;
+      if (left + popupW > window.innerWidth - 8) left = window.innerWidth - popupW - 8;
+      // If not enough space below, show above
       const spaceBelow = window.innerHeight - r.bottom - 8;
-
-      if (spaceRight >= popupW && window.innerWidth >= 600) {
-        // Place to the right, vertically centered on button
-        setPopupStyle({ position:"fixed", left: r.right + 8, top: r.top + r.height/2, transform:"translateY(-50%)" });
-      } else {
-        // Place below, right-aligned to button but clamped to viewport
-        let left = r.right - popupW;
-        if (left < 8) left = 8;
-        if (left + popupW > window.innerWidth - 8) left = window.innerWidth - popupW - 8;
-        setPopupStyle({ position:"fixed", left, top: r.bottom + 6 });
-      }
+      const top = spaceBelow >= 320 ? r.bottom + 6 : r.top - 320 - 6;
+      setPopupStyle({ position:"fixed", left, top });
     }
     setOpen(o => !o);
   }
@@ -719,7 +714,7 @@ export default function App() {
       </nav>
       <div className="dash">
         <div className="dash-hi">Hallo, {name} 👋</div>
-        <div className="dash-sub">{plan.planSummary}</div>
+        <div className="dash-sub">{plan.planSummary?.replace(/^["']|["']$/g,"") || "Dein personalisierter Lernplan ist bereit."}</div>
 
         <div className="stats">
           <div className="stat">
