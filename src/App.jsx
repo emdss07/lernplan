@@ -241,7 +241,7 @@ const css = `
   @keyframes pulse   { 0%,100%{opacity:.5} 50%{opacity:1} }
 `;
 
-const VERSION    = "v2.3";
+const VERSION    = "v2.4";
 const SUBJECTS   = ["Mathematik","Deutsch","Englisch","Biologie","Geschichte","Physik","Chemie","Latein"];
 const SUBJ_COLOR = { Mathematik:"math",Deutsch:"german",Englisch:"english",Biologie:"bio",Geschichte:"history",Physik:"physics",Chemie:"chem",Latein:"latin" };
 const MONTHS_DE  = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
@@ -279,35 +279,49 @@ function fmtMin(m) {
 // ── DatePicker ─────────────────────────────────────────────
 function DatePicker({ value, onChange }) {
   const [open, setOpen] = useState(false);
-  const [popupStyle, setPopupStyle] = useState({});
   const today    = new Date();
   const todayStr = localStr(today);
   const init     = value ? new Date(value+"T12:00:00") : today;
   const [vy, setVy] = useState(init.getFullYear());
   const [vm, setVm] = useState(init.getMonth());
+  const [popupStyle, setPopupStyle] = useState({});
   const btnRef  = useRef(null);
   const wrapRef = useRef(null);
 
   useEffect(() => {
-    function close(e) { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); }
+    function close(e) {
+      if (open && wrapRef.current && !wrapRef.current.contains(e.target) &&
+          !(e.target.closest && e.target.closest(".dp-popup"))) {
+        setOpen(false);
+      }
+    }
     document.addEventListener("mousedown", close);
     document.addEventListener("touchstart", close);
-    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("touchstart", close); };
-  }, []);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("touchstart", close);
+    };
+  }, [open]);
+
+  function calcPosition() {
+    if (!btnRef.current) return {};
+    const r = btnRef.current.getBoundingClientRect();
+    const popupW = 268;
+    const popupH = 300;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    // Horizontal: center on button, clamp to screen
+    let left = r.left + r.width / 2 - popupW / 2;
+    left = Math.max(8, Math.min(left, vw - popupW - 8));
+    // Vertical: below button if space, else above
+    let top = r.bottom + 6;
+    if (top + popupH > vh - 8) top = r.top - popupH - 6;
+    if (top < 8) top = 8;
+    return { left, top };
+  }
 
   function openPicker() {
-    if (btnRef.current) {
-      const r = btnRef.current.getBoundingClientRect();
-      const popupW = 268;
-      // Center popup under button, clamped to viewport edges
-      let left = r.left + r.width / 2 - popupW / 2;
-      if (left < 8) left = 8;
-      if (left + popupW > window.innerWidth - 8) left = window.innerWidth - popupW - 8;
-      // If not enough space below, show above
-      const spaceBelow = window.innerHeight - r.bottom - 8;
-      const top = spaceBelow >= 320 ? r.bottom + 6 : r.top - 320 - 6;
-      setPopupStyle({ position:"fixed", left, top });
-    }
+    setPopupStyle(calcPosition());
     setOpen(o => !o);
   }
 
@@ -324,8 +338,8 @@ function DatePicker({ value, onChange }) {
         </svg>
         {value ? fmtDate(value) : "Datum wählen"}
       </div>
-      {open && (
-        <div className="dp-popup" style={popupStyle}>
+      {open && createPortal(
+        <div className="dp-popup" style={{position:"fixed", zIndex:9999, ...popupStyle}}>
           <div className="dp-head">
             <button className="dp-nav" onClick={()=>vm===0?(setVm(11),setVy(y=>y-1)):setVm(m=>m-1)}>‹</button>
             <div className="dp-month">{MONTHS_DE[vm]} {vy}</div>
@@ -345,7 +359,8 @@ function DatePicker({ value, onChange }) {
               );
             })}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
